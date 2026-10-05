@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypePaws 🐾 - Cute & Playful Touch-Typing Academy</title>
+  <meta name="description" content="A modern, playful typing-practice website with cute animated mascots, 3 learning paths, and 100 practice lessons per path.">
+  
+  <!-- Google Fonts: Fredoka & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐾</text></svg>">
+</head>
+<body>
+
+  <!-- Confetti Canvas for Victory Celebrations -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <div class="app-container">
+
+    <!-- ==================== HEADER NAVBAR ==================== -->
+    <header class="header-navbar">
+      <div class="brand-logo" onclick="window.app.switchView('dashboard')" role="button" aria-label="TypePaws Home">
+        <span class="brand-icon">🐾</span>
+        <span class="brand-text">Type<span class="brand-highlight">Paws</span></span>
+      </div>
+
+      <!-- Current Learning Path Badge Switcher -->
+      <div class="level-badge-pill" id="current-level-badge" title="Click to change your typing level">
+        <span class="badge-icon">🐾</span>
+        <span class="badge-label">Beginner</span>
+        <span class="badge-chevron">▾</span>
+      </div>
+
+      <!-- Nav Links -->
+      <nav class="nav-links">
+        <button class="nav-link active" data-view="dashboard">
+          <span>🏠</span> Dashboard
+        </button>
+        <button class="nav-link" data-view="practice">
+          <span>⌨️</span> Practice Arena
+        </button>
+        <button class="nav-link" data-view="lessons">
+          <span>📚</span> Lessons (100)
+        </button>
+      </nav>
+
+      <!-- Header Action Controls -->
+      <div class="nav-actions">
+        <button class="icon-btn" id="theme-toggle-btn" title="Toggle Dark / Light Mode" aria-label="Toggle Theme">
+          🌙
+        </button>
+        <button class="icon-btn" id="audio-toggle-btn" title="Toggle Mechanical & Cartoon Sounds" aria-label="Toggle Audio">
+          🔔
+        </button>
+        <button class="icon-btn" id="settings-nav-btn" title="Settings & Preferences" aria-label="Settings">
+          ⚙️
+        </button>
+        <button class="icon-btn mobile-toggle" id="mobile-menu-toggle" aria-label="Open Navigation Menu">
+          ☰
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== 1. DASHBOARD VIEW ==================== -->
+    <main id="view-dashboard" class="view-section active">
+      <!-- Hero Continue Card -->
+      <section class="hero-continue-card">
+        <div class="hero-content">
+          <span class="hero-badge-tag">Current Learning Path</span>
+          <h1 class="hero-title" id="dash-hero-title">Welcome to Beginner: Kitten Steps</h1>
+          <p class="hero-subtitle" id="dash-hero-subtitle">From home row anchor keys to smooth everyday typing</p>
+          
+          <div class="hero-progress-section">
+            <div class="hero-progress-info">
+              <span id="dash-hero-progress-text">13 of 100 Practice Lessons Completed (13%)</span>
+              <span>Target: 30 WPM</span>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-fill" id="dash-hero-progress-bar" style="width: 13%;"></div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-lg" id="dash-resume-btn">
+              <span>▶</span> Resume Lesson #14: Rhythm Builder
+            </button>
+            <button class="btn btn-outline btn-lg" onclick="window.app.switchView('lessons')">
+              <span>📚</span> Browse All 100 Lessons
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Key Metrics Row -->
+      <section class="stats-metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon-wrap metric-icon-amber">⚡</div>
+          <div>
+            <div class="metric-value" id="stat-avg-wpm">34</div>
+            <div class="metric-label">Average WPM</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-wrap metric-icon-sky">🚀</div>
+          <div>
+            <div class="metric-value" id="stat-top-wpm">46</div>
+            <div class="metric-label">Top Speed (WPM)</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-wrap metric-icon-mint">🎯</div>
+          <div>
+            <div class="metric-value" id="stat-tests-completed">13</div>
+            <div class="metric-label">Lessons Finished</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-wrap metric-icon-coral">🔥</div>
+          <div>
+            <div class="metric-value" id="stat-streak-days">4 Days 🔥</div>
+            <div class="metric-label">Daily Streak</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-wrap metric-icon-purple">⏱️</div>
+          <div>
+            <div class="metric-value" id="stat-total-time">64 mins</div>
+            <div class="metric-label">Practice Time</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Middle Grid: Canvas Performance Chart & Friendly Tip -->
+      <section class="dash-middle-grid">
+        <div class="chart-card">
+          <div class="card-header-flex">
+            <h3 class="card-title">📈 WPM Progression History</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Real-time performance trend</span>
+          </div>
+          <div class="canvas-container">
+            <canvas id="wpm-trend-chart" style="width: 100%; height: 100%;"></canvas>
+          </div>
+        </div>
+
+        <div class="tip-card">
+          <div>
+            <span class="hero-badge-tag" style="background-color: var(--color-secondary-soft); color: var(--color-secondary);">🐾 Mascot's Daily Secret</span>
+            <h3 class="card-title" style="margin-top: 0.5rem;">How Touch Typing Works</h3>
+            <p class="tip-content" id="dash-tip-text">
+              "Never look down at your keyboard! The little raised bumps on the <b>F</b> and <b>J</b> keys let your index fingers know where home is. Trust your muscle memory—smooth paws are swift paws!"
+            </p>
+          </div>
+          <div class="tip-cat-mascot">
+            <span style="font-size: 1.6rem;">🐱</span>
+            <span>Barnaby the Whimsical Cat</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Motivational Badges Showcase -->
+      <section class="badges-section">
+        <div class="card-header-flex">
+          <div>
+            <h3 class="card-title">🏆 Badges & Milestones</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Reward your progress and unlock cute typing titles!</p>
+          </div>
+        </div>
+        <div class="badges-grid" id="dash-badges-grid">
+          <!-- Populated by storage.js -->
+        </div>
+      </section>
+    </main>
+
+    <!-- ==================== 2. PRACTICE ARENA VIEW ==================== -->
+    <section id="view-practice" class="view-section">
+      <!-- Top Meta & Live Stats Bar -->
+      <div class="practice-header-bar">
+        <div class="practice-meta-left">
+          <span class="practice-lesson-tag" id="practice-lesson-badge">Beginner • Lesson #1</span>
+          <h2 class="practice-title" id="practice-lesson-title">F and J Anchors</h2>
+          <span class="practice-sub" id="practice-lesson-focus">Focus: f, j</span>
+        </div>
+
+        <!-- Live Metrics Bar -->
+        <div class="live-stats-bar">
+          <div class="live-stat-item">
+            <span class="live-stat-num" id="live-stat-wpm">0</span>
+            <span class="live-stat-lbl">WPM</span>
+          </div>
+          <div class="live-stat-item">
+            <span class="live-stat-num" id="live-stat-acc">100%</span>
+            <span class="live-stat-lbl">Accuracy</span>
+          </div>
+          <div class="live-stat-item">
+            <span class="live-stat-num" id="live-stat-time">0:00</span>
+            <span class="live-stat-lbl">Time</span>
+          </div>
+          <div class="live-stat-item">
+            <span class="live-stat-num" id="live-stat-errors" style="color: var(--color-error);">0</span>
+            <span class="live-stat-lbl">Errors</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arena Layout: Typing Box + Cute Mascot Sidebar -->
+      <div class="practice-arena-layout">
+        <!-- Main Focused Typing Area -->
+        <div>
+          <div class="practice-typing-card" id="typing-arena-box">
+            <!-- Hidden accessible input -->
+            <textarea id="typing-hidden-input" class="hidden-typing-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Typing input area"></textarea>
+
+            <!-- Rendered Characters with smooth Caret -->
+            <div class="sample-text-area" id="sample-text-display">
+              <!-- Rendered spans inserted by app.js -->
+            </div>
+          </div>
+
+          <!-- Progress bar across the lesson -->
+          <div class="practice-progress-strip">
+            <div class="progress-bar-track">
+              <div class="progress-fill" id="practice-progress-bar" style="width: 0%;"></div>
+            </div>
+            <span class="practice-progress-pct" id="practice-progress-pct">0%</span>
+          </div>
+
+          <!-- Arena Controls & Keyboard Toggle -->
+          <div class="practice-controls-row">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-outline btn-sm" id="practice-restart-btn">
+                🔄 Restart (<kbd>Tab</kbd>)
+              </button>
+              <button class="btn btn-primary btn-sm" id="practice-next-btn">
+                Next Lesson ⏩
+              </button>
+              <button class="btn btn-outline btn-sm" id="toggle-keyboard-hints">
+                ⌨ Hide Keyboard
+              </button>
+            </div>
+            <div class="key-hint-tip">
+              💡 Tip: Click anywhere to focus • Start typing to trigger timer
+            </div>
+          </div>
+        </div>
+
+        <!-- Cute Mascot Sidebar -->
+        <aside class="mascot-sidebar-card">
+          <div id="mascot-container">
+            <!-- Managed by mascot.js -->
+          </div>
+        </aside>
+      </div>
+
+      <!-- Touch-Typing On-Screen Virtual Keyboard -->
+      <section class="virtual-keyboard-wrapper" id="virtual-keyboard-container">
+        <!-- Built by keyboard.js -->
+      </section>
+    </section>
+
+    <!-- ==================== 3. LESSONS CATALOG VIEW (100 Numbered Lessons) ==================== -->
+    <section id="view-lessons" class="view-section">
+      <div class="lessons-view-header">
+        <h2 class="lessons-level-title" id="lessons-level-title">🐾 Beginner: Kitten Steps</h2>
+        <p class="lessons-level-desc" id="lessons-level-desc">100 Progressive Practice Lessons across 5 Curated Sections</p>
+      </div>
+
+      <!-- Section Filter Pills -->
+      <div class="section-filter-bar" id="lessons-section-filters">
+        <!-- Rendered by app.js -->
+      </div>
+
+      <!-- 100 Lesson Cards Grid -->
+      <div class="lessons-cards-grid" id="lessons-grid">
+        <!-- Rendered by app.js -->
+      </div>
+    </section>
+
+  </div><!-- /app-container -->
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. Learning Path / Level Selection Modal -->
+  <div class="modal-overlay" id="level-selection-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title" id="level-modal-title">Choose Your Learning Path</h2>
+        <button class="modal-close" onclick="window.app.closeModal('level-selection-modal')">&times;</button>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 1.25rem;">
+        Choose where you want to start. You can switch between all 3 learning paths anytime without losing your progress!
+      </p>
+      <div class="level-selection-cards-grid" id="level-selection-cards">
+        <!-- Populated by app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Results Modal (Celebration Screen) -->
+  <div class="modal-overlay" id="results-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog results-modal-dialog">
+      <div class="results-stars-display" id="results-stars">★★★</div>
+      <span class="results-grade" id="results-grade-badge">Grade S</span>
+      <h2 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 0.25rem;">Lesson Complete! 🎉</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;" id="results-lesson-name">
+        Lesson #1: F and J Anchors
+      </p>
+
+      <!-- Results Stats Grid -->
+      <div class="results-stats-row">
+        <div class="results-stat-box">
+          <span class="results-stat-num" id="results-wpm">42</span>
+          <span class="results-stat-lbl">WPM</span>
+        </div>
+        <div class="results-stat-box">
+          <span class="results-stat-num" id="results-accuracy">98%</span>
+          <span class="results-stat-lbl">Accuracy</span>
+        </div>
+        <div class="results-stat-box">
+          <span class="results-stat-num" id="results-time">18s</span>
+          <span class="results-stat-lbl">Time</span>
+        </div>
+        <div class="results-stat-box">
+          <span class="results-stat-num" id="results-errors" style="color: var(--color-error);">1</span>
+          <span class="results-stat-lbl">Errors</span>
+        </div>
+      </div>
+
+      <!-- Mascot Encouraging Verdict -->
+      <div class="results-mascot-box">
+        <div style="font-size: 1.3rem; margin-bottom: 0.25rem;">🐱</div>
+        <div id="results-mascot-verdict">"Purr-fect touch typing master! Barnaby is singing!"</div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="results-actions-grid">
+        <button class="btn btn-primary" id="results-next-btn">Next Lesson ⏩</button>
+        <button class="btn btn-outline" id="results-retry-btn">Try Again 🔄</button>
+        <button class="btn btn-outline" id="results-share-btn">Share Score 📋</button>
+        <button class="btn btn-outline" id="results-lessons-btn">All Lessons 📚</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Settings Modal -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog" style="max-width: 540px;">
+      <div class="modal-header">
+        <h2 class="modal-title">⚙️ Practice Settings</h2>
+        <button class="modal-close" onclick="window.app.closeModal('settings-modal')">&times;</button>
+      </div>
+
+      <div class="settings-form-group">
+        <div class="settings-label-wrap">
+          <span class="settings-title">Typing Sound Theme</span>
+          <span class="settings-desc">Crisp mechanical switch clacks or cute cartoon notes</span>
+        </div>
+        <select class="form-select" id="setting-sound-theme">
+          <option value="mechanical">Mechanical Switch</option>
+          <option value="cartoon">Cute Marimba</option>
+          <option value="bubble">Water Bubble Pop</option>
+          <option value="off">Off (Silent)</option>
+        </select>
+      </div>
+
+      <div class="settings-form-group">
+        <div class="settings-label-wrap">
+          <span class="settings-title">Sound Volume</span>
+          <span class="settings-desc">Adjust sound effect volume</span>
+        </div>
+        <input type="range" class="form-range" id="setting-volume" min="0" max="100" value="50">
+      </div>
+
+      <div class="settings-form-group">
+        <div class="settings-label-wrap">
+          <span class="settings-title">Animated Mascot Character</span>
+          <span class="settings-desc">Pick your favorite practice buddy</span>
+        </div>
+        <select class="form-select" id="setting-mascot-skin">
+          <option value="cat">Barnaby the Cat 🐱</option>
+          <option value="hamster">Pip the Hamster 🐹</option>
+          <option value="blob">Bubbles the Blob 💧</option>
+        </select>
+      </div>
+
+      <div class="settings-form-group">
+        <div class="settings-label-wrap">
+          <span class="settings-title">Timer / Drill Mode</span>
+          <span class="settings-desc">Complete full passage or race against the clock</span>
+        </div>
+        <select class="form-select" id="setting-timer-mode">
+          <option value="passage">Complete Full Passage</option>
+          <option value="15">15 Seconds Sprint</option>
+          <option value="30">30 Seconds Sprint</option>
+          <option value="60">60 Seconds Sprint</option>
+        </select>
+      </div>
+
+      <div class="settings-form-group" style="border-bottom: none; margin-top: 1rem;">
+        <div class="settings-label-wrap">
+          <span class="settings-title" style="color: var(--color-error);">Reset History & Progress</span>
+          <span class="settings-desc">Clear local records and reset to day 1</span>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btn-reset-progress" style="color: var(--color-error); border-color: var(--color-error-soft);">
+          Reset All Data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/lessons.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/mascot.js"></script>
+  <script src="js/keyboard.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

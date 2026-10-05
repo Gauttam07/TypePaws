@@ -1,0 +1,12 @@
+{
+  "name": "typepaws-typing-practice",
+  "version": "1.0.0",
+  "description": "A modern typing-practice website with a cute, funny visual style and 3 comprehensive learning paths.",
+  "scripts": {
+    "start": "python -m http.server 3000",
+    "serve": "npx serve ."
+  },
+  "keywords": ["typing", "practice", "education", "touch-typing", "cute"],
+  "author": "",
+  "license": "MIT"
+}
