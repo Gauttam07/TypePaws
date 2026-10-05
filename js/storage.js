@@ -136,10 +136,117 @@ class StorageManager {
     return this.data.completedLessons[lessonId] || null;
   }
 
+  /**
+   * Benchmark Rules:
+   * - Beginner: NO benchmark required (lessons 1-100: completing passes).
+   * - Intermediate: Lessons 1-5 grace period (no benchmark). Lessons 6-100: Min 35 WPM & 90% Acc.
+   * - Advanced: Lessons 1-5 grace period (no benchmark). Lessons 6-100: Min 55 WPM & 94% Acc.
+   */
+  getBenchmark(levelKey, lessonNumber) {
+    const lvl = levelKey || this.data.currentLevel || 'beginner';
+    const num = typeof lessonNumber === 'number' ? lessonNumber : parseInt(lessonNumber);
+
+    if (lvl === 'beginner') {
+      return {
+        required: false,
+        minWpm: 0,
+        minAccuracy: 0,
+        description: "No benchmark required — complete to pass"
+      };
+    }
+
+    if (lvl === 'intermediate') {
+      if (num <= 5) {
+        return {
+          required: false,
+          minWpm: 0,
+          minAccuracy: 0,
+          description: "Intro grace lesson — complete to pass"
+        };
+      }
+      return {
+        required: true,
+        minWpm: 35,
+        minAccuracy: 90,
+        description: "Benchmark: 35+ WPM & 90%+ Accuracy"
+      };
+    }
+
+    if (lvl === 'advanced') {
+      if (num <= 5) {
+        return {
+          required: false,
+          minWpm: 0,
+          minAccuracy: 0,
+          description: "Intro grace lesson — complete to pass"
+        };
+      }
+      return {
+        required: true,
+        minWpm: 55,
+        minAccuracy: 94,
+        description: "Benchmark: 55+ WPM & 94%+ Accuracy"
+      };
+    }
+
+    return { required: false, minWpm: 0, minAccuracy: 0, description: "Complete to pass" };
+  }
+
+  /**
+   * Check whether a given lesson performance meets the pass requirement
+   */
+  isLessonPassed(levelKey, lessonNumber, result) {
+    const bench = this.getBenchmark(levelKey, lessonNumber);
+    if (!bench.required) {
+      return true; // No benchmark required (Beginner or Lessons 1-5)
+    }
+    return result.wpm >= bench.minWpm && result.accuracy >= bench.minAccuracy;
+  }
+
+  /**
+   * Check whether a lesson is unlocked for practice:
+   * - Lesson 1 of any path is always unlocked.
+   * - Lesson N is unlocked only if Lesson N-1 is passed!
+   */
+  isLessonUnlocked(levelKey, lessonNumber) {
+    const lvl = levelKey || this.data.currentLevel || 'beginner';
+    const num = typeof lessonNumber === 'number' ? lessonNumber : parseInt(lessonNumber);
+
+    if (num <= 1) return true; // Lesson 1 is always unlocked
+
+    const prefix = lvl === 'beginner' ? 'b_' : (lvl === 'intermediate' ? 'i_' : 'a_');
+    const prevId = `${prefix}${num - 1}`;
+    const prevRecord = this.data.completedLessons[prevId];
+
+    if (!prevRecord) return false;
+
+    // For beginner, completing counts as passed
+    if (lvl === 'beginner') {
+      return !!prevRecord.completed;
+    }
+
+    // For intermediate & advanced, must be passed (met benchmark or grace)
+    return !!prevRecord.passed;
+  }
+
+  /**
+   * Check whether Long Paragraph Arena is unlocked:
+   * Must have completed ALL 100 Beginner lessons!
+   */
+  isParagraphArenaUnlocked() {
+    const bStats = this.getLevelStats('beginner');
+    return bStats.completedCount >= 100;
+  }
+
   recordLessonResult(lesson, result) {
     const id = lesson.id;
+    const lvl = lesson.level || this.data.currentLevel;
     const prev = this.data.completedLessons[id];
     
+    // Check if passed according to level & benchmark rules
+    const passed = this.isLessonPassed(lvl, lesson.number, result);
+    const benchmark = this.getBenchmark(lvl, lesson.number);
+
     // Calculate stars: 3 stars if acc >= 97% and wpm >= target, 2 stars if acc >= 92%, 1 star otherwise
     let stars = 1;
     if (result.accuracy >= 97 && result.wpm >= (lesson.targetWpm || 25)) {
@@ -151,19 +258,20 @@ class StorageManager {
     const bestWpm = Math.max(result.wpm, prev ? prev.bestWpm : 0);
     const bestAcc = Math.max(result.accuracy, prev ? prev.bestAccuracy : 0);
     const bestStars = Math.max(stars, prev ? prev.stars : 1);
+    const wasPassed = prev ? (prev.passed || passed) : passed;
 
     this.data.completedLessons[id] = {
       completed: true,
+      passed: wasPassed,
       stars: bestStars,
       bestWpm: bestWpm,
       bestAccuracy: bestAcc,
       lastPracticed: new Date().toISOString()
     };
 
-    // Update last active lesson for this level
-    const lvl = this.data.currentLevel;
-    if (lesson.number < 100) {
-      this.data.lastLesson[lvl] = lesson.number + 1;
+    // Update last active lesson for this level ONLY if passed!
+    if (passed && lesson.number < 100) {
+      this.data.lastLesson[lvl] = Math.max(this.data.lastLesson[lvl] || 1, lesson.number + 1);
     }
 
     // Update aggregate stats
@@ -198,6 +306,14 @@ class StorageManager {
     this.checkBadges(result, lesson);
 
     this.save();
+
+    return {
+      passed,
+      benchmark,
+      stars: bestStars,
+      bestWpm,
+      bestAccuracy: bestAcc
+    };
   }
 
   checkBadges(result, lesson) {
@@ -383,27 +499,69 @@ class StorageManager {
     const prefix = lvlKey === 'beginner' ? 'b_' : (lvlKey === 'intermediate' ? 'i_' : 'a_');
     const comp = this.data.completedLessons;
     let completedCount = 0;
+    let passedCount = 0;
     let totalStars = 0;
     let highestWpm = 0;
+    let nextLessonNum = 1;
 
     for (let i = 1; i <= 100; i++) {
       const item = comp[`${prefix}${i}`];
       if (item && item.completed) {
         completedCount++;
-        totalStars += item.stars;
+        totalStars += item.stars || 0;
         if (item.bestWpm > highestWpm) highestWpm = item.bestWpm;
+        if (item.passed || (lvlKey === 'beginner' && item.completed)) {
+          passedCount++;
+        }
+      }
+    }
+
+    // Determine the next lesson to practice: first unlocked lesson that isn't passed yet
+    for (let i = 1; i <= 100; i++) {
+      const isUnlocked = this.isLessonUnlocked(lvlKey, i);
+      const item = comp[`${prefix}${i}`];
+      const isPassed = item && (item.passed || (lvlKey === 'beginner' && item.completed));
+      if (isUnlocked && !isPassed) {
+        nextLessonNum = i;
+        break;
+      }
+      if (i === 100 && isPassed) {
+        nextLessonNum = 100;
       }
     }
 
     return {
       completedCount,
+      passedCount,
       totalCount: 100,
       percent: Math.round((completedCount / 100) * 100),
       totalStars,
       maxStars: 300,
       highestWpm,
-      nextLessonNum: this.data.lastLesson[lvlKey] || 1
+      nextLessonNum
     };
+  }
+
+  /**
+   * Demo & Test Helper:
+   * Quickly marks all 100 beginner lessons as completed so the user can test the Long Paragraph Arena.
+   */
+  unlockAllBeginnerForTesting() {
+    for (let i = 1; i <= 100; i++) {
+      this.data.completedLessons[`b_${i}`] = {
+        completed: true,
+        passed: true,
+        stars: 3,
+        bestWpm: 35 + (i % 8),
+        bestAccuracy: 98,
+        lastPracticed: new Date().toISOString()
+      };
+    }
+    this.data.lastLesson.beginner = 100;
+    this.data.stats.testsCompleted = Math.max(this.data.stats.testsCompleted, 100);
+    this.data.stats.averageWpm = 40;
+    this.data.stats.topWpm = 48;
+    this.save();
   }
 
   getSettings() {

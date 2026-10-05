@@ -26,6 +26,19 @@ class TypePawsApp {
     this.wpmHistory = [];
     this.lessonsDisplayMode = 'grid'; // 'grid' | 'list'
 
+    // Long Paragraph Arena State
+    this.currentParagraph = null;
+    this.isParagraphMode = false;
+    this.paraText = "";
+    this.paraIndex = 0;
+    this.paraCorrectChars = 0;
+    this.paraTotalKeystrokes = 0;
+    this.paraErrorCount = 0;
+    this.isParaPracticing = false;
+    this.paraStartTime = null;
+    this.paraTimerInterval = null;
+    this.paraElapsedSeconds = 0;
+
     this.init();
   }
 
@@ -45,6 +58,7 @@ class TypePawsApp {
 
     this.bindEvents();
     this.updateHeaderLevelBadge();
+    this.updateParagraphLockIndicator();
     this.updateAuthUI();
     this.renderDashboard();
 
@@ -278,6 +292,9 @@ class TypePawsApp {
       });
     }
 
+    // Long Paragraph Arena listeners
+    this.bindParagraphEvents();
+
     // Settings form listeners
     this.bindSettingsEvents();
   }
@@ -316,6 +333,21 @@ class TypePawsApp {
       timerSelect.value = window.storageManager.data.settings.timerMode;
       timerSelect.addEventListener('change', (e) => {
         window.storageManager.updateSettings({ timerMode: e.target.value });
+      });
+    }
+
+    // Testing helper button in Settings: Unlock all 100 Beginner Lessons
+    const unlockBegBtn = document.getElementById('btn-unlock-beginner-test');
+    if (unlockBegBtn) {
+      unlockBegBtn.addEventListener('click', () => {
+        window.storageManager.unlockAllBeginnerForTesting();
+        this.updateParagraphLockIndicator();
+        this.renderDashboard();
+        this.closeModal('settings-modal');
+        this.switchView('paragraphs');
+        if (window.mascot) {
+          window.mascot.updateBubble("🎉 All 100 Beginner Lessons marked complete! Long Paragraph Arena is now Unlocked! 🐾", true);
+        }
       });
     }
 
@@ -362,6 +394,8 @@ class TypePawsApp {
         const inputArea = document.getElementById('typing-hidden-input');
         if (inputArea) inputArea.focus();
       }, 100);
+    } else if (viewName === 'paragraphs') {
+      this.renderParagraphsView();
     }
   }
 
@@ -599,21 +633,51 @@ class TypePawsApp {
       if (this.lessonsDisplayMode === 'grid') {
         grid.className = 'lessons-tiles-matrix';
         grid.innerHTML = filtered.map(lesson => {
+          const isUnlocked = window.storageManager.isLessonUnlocked(this.currentLevelKey, lesson.number);
+          const benchmark = window.storageManager.getBenchmark(this.currentLevelKey, lesson.number);
           const progress = completedMap[lesson.id];
           const isDone = !!progress;
-          const isNext = lesson.number === levelStats.nextLessonNum && !isDone;
+          const isPassed = isDone && (progress.passed || (this.currentLevelKey === 'beginner' && progress.completed));
+          const isFailedBenchmark = isDone && !isPassed;
+          const isNext = lesson.number === levelStats.nextLessonNum && !isDone && isUnlocked;
           const starsHtml = isDone
             ? '★'.repeat(progress.stars) + '☆'.repeat(3 - progress.stars)
             : '☆☆☆';
 
+          if (!isUnlocked) {
+            return `
+              <div class="lesson-tile locked" data-lesson-id="${lesson.id}" data-locked="true" data-lesson-num="${lesson.number}" title="🔒 Locked: Pass Lesson #${lesson.number - 1} first to unlock">
+                <div class="tile-top-row">
+                  <span class="tile-num-badge">#${lesson.number < 10 ? '0' + lesson.number : lesson.number}</span>
+                  <span class="tile-lock-icon">🔒</span>
+                </div>
+                <div class="tile-title">${lesson.title}</div>
+                <div class="tile-focus-chip">${lesson.focus}</div>
+                <div class="tile-stars">☆☆☆</div>
+                <div class="tile-wpm">${benchmark.required ? `Need ${benchmark.minWpm} WPM` : 'Locked 🔒'}</div>
+              </div>
+            `;
+          }
+
+          const statusIcon = isPassed
+            ? '<span class="tile-check-icon">✓</span>'
+            : (isFailedBenchmark
+                ? '<span class="tile-retry-icon" title="Benchmark missed! Try again to unlock next lesson">⚠️</span>'
+                : (isNext ? '<span style="font-size: 0.68rem; font-weight: 800; color: var(--color-primary-dark);">ACTIVE</span>' : ''));
+
+          const benchmarkBadge = benchmark.required
+            ? `<div class="tile-bench-chip" title="${benchmark.description}">⚡ ${benchmark.minWpm} WPM • ${benchmark.minAccuracy}%</div>`
+            : '';
+
           return `
-            <div class="lesson-tile ${isDone ? 'completed' : ''} ${isNext ? 'current-active' : ''}" data-lesson-id="${lesson.id}" title="${lesson.title}: ${lesson.description}">
+            <div class="lesson-tile ${isDone ? (isPassed ? 'completed' : 'failed-bench') : ''} ${isNext ? 'current-active' : ''}" data-lesson-id="${lesson.id}" data-locked="false" data-lesson-num="${lesson.number}" title="${lesson.title}: ${lesson.description}">
               <div class="tile-top-row">
                 <span class="tile-num-badge">#${lesson.number < 10 ? '0' + lesson.number : lesson.number}</span>
-                ${isDone ? '<span class="tile-check-icon">✓</span>' : (isNext ? '<span style="font-size: 0.68rem; font-weight: 800; color: var(--color-primary-dark);">ACTIVE</span>' : '')}
+                ${statusIcon}
               </div>
               <div class="tile-title">${lesson.title}</div>
               <div class="tile-focus-chip">${lesson.focus}</div>
+              ${benchmarkBadge}
               <div class="tile-stars">${starsHtml}</div>
               <div class="tile-wpm">${isDone ? `${progress.bestWpm} WPM` : `Target ${lesson.targetWpm}`}</div>
             </div>
@@ -622,26 +686,51 @@ class TypePawsApp {
       } else {
         grid.className = 'lessons-cards-grid';
         grid.innerHTML = filtered.map(lesson => {
+          const isUnlocked = window.storageManager.isLessonUnlocked(this.currentLevelKey, lesson.number);
+          const benchmark = window.storageManager.getBenchmark(this.currentLevelKey, lesson.number);
           const progress = completedMap[lesson.id];
           const isDone = !!progress;
+          const isPassed = isDone && (progress.passed || (this.currentLevelKey === 'beginner' && progress.completed));
+          const isFailedBenchmark = isDone && !isPassed;
           const starsHtml = isDone
             ? '★'.repeat(progress.stars) + '☆'.repeat(3 - progress.stars)
             : '☆☆☆';
 
+          if (!isUnlocked) {
+            return `
+              <div class="lesson-card locked" data-lesson-id="${lesson.id}" data-locked="true" data-lesson-num="${lesson.number}">
+                <div class="lesson-card-top">
+                  <span class="lesson-number">#${lesson.number}</span>
+                  <span class="lesson-diff-tag diff-${lesson.difficulty.toLowerCase()}">${lesson.difficulty}</span>
+                </div>
+                <h4 class="lesson-title">🔒 ${lesson.title}</h4>
+                <div class="lesson-focus">Focus: <code>${lesson.focus}</code></div>
+                <p class="lesson-snippet">"${lesson.text.substring(0, 48)}..."</p>
+                <div class="lesson-card-footer">
+                  <div class="lesson-stars">☆☆☆</div>
+                  <div class="lesson-best-wpm">${benchmark.required ? `Requires ${benchmark.minWpm} WPM & ${benchmark.minAccuracy}% Acc` : `Pass Lesson #${lesson.number - 1} to unlock`}</div>
+                  <button class="btn btn-sm btn-outline disabled-locked" disabled>
+                    🔒 Locked
+                  </button>
+                </div>
+              </div>
+            `;
+          }
+
           return `
-            <div class="lesson-card ${isDone ? 'completed' : ''}" data-lesson-id="${lesson.id}">
+            <div class="lesson-card ${isDone ? (isPassed ? 'completed' : 'failed-bench') : ''}" data-lesson-id="${lesson.id}" data-locked="false" data-lesson-num="${lesson.number}">
               <div class="lesson-card-top">
                 <span class="lesson-number">#${lesson.number}</span>
                 <span class="lesson-diff-tag diff-${lesson.difficulty.toLowerCase()}">${lesson.difficulty}</span>
               </div>
               <h4 class="lesson-title">${lesson.title}</h4>
-              <div class="lesson-focus">Focus: <code>${lesson.focus}</code></div>
+              <div class="lesson-focus">Focus: <code>${lesson.focus}</code> ${benchmark.required ? `<span class="lesson-bench-tag">⚡ Benchmark: ${benchmark.minWpm} WPM / ${benchmark.minAccuracy}%</span>` : ''}</div>
               <p class="lesson-snippet">"${lesson.text.substring(0, 48)}..."</p>
               <div class="lesson-card-footer">
                 <div class="lesson-stars ${isDone ? 'active' : ''}">${starsHtml}</div>
-                <div class="lesson-best-wpm">${isDone ? `${progress.bestWpm} WPM` : `Target: ${lesson.targetWpm} WPM`}</div>
-                <button class="btn btn-sm ${isDone ? 'btn-outline' : 'btn-primary'} btn-start-lesson">
-                  ${isDone ? 'Practice Again' : 'Start'}
+                <div class="lesson-best-wpm">${isDone ? `${progress.bestWpm} WPM ${isFailedBenchmark ? '(Benchmark Missed)' : ''}` : `Target: ${lesson.targetWpm} WPM`}</div>
+                <button class="btn btn-sm ${isPassed ? 'btn-outline' : 'btn-primary'} btn-start-lesson">
+                  ${isPassed ? 'Practice Again' : (isFailedBenchmark ? 'Retry Benchmark ⚠️' : 'Start')}
                 </button>
               </div>
             </div>
@@ -651,6 +740,23 @@ class TypePawsApp {
 
       grid.querySelectorAll('.lesson-tile, .lesson-card').forEach(el => {
         el.addEventListener('click', () => {
+          const isLocked = el.dataset.locked === 'true';
+          const lessonNum = parseInt(el.dataset.lessonNum);
+
+          if (isLocked) {
+            el.classList.add('shake-locked');
+            setTimeout(() => el.classList.remove('shake-locked'), 400);
+
+            if (window.soundEngine) window.soundEngine.playError();
+            if (window.mascot) {
+              const prevNum = lessonNum - 1;
+              const prevBench = window.storageManager.getBenchmark(this.currentLevelKey, prevNum);
+              const reqDetail = prevBench.required ? ` with at least ${prevBench.minWpm} WPM & ${prevBench.minAccuracy}% accuracy` : ``;
+              window.mascot.updateBubble(`🔒 Lesson #${lessonNum} is locked! Pass Lesson #${prevNum}${reqDetail} to unlock it! 🐾`, true);
+            }
+            return;
+          }
+
           const id = el.dataset.lessonId;
           const lessonObj = levelInfo.lessons.find(l => l.id === id);
           if (lessonObj) {
@@ -1027,8 +1133,11 @@ class TypePawsApp {
     if (window.soundEngine) window.soundEngine.playVictory();
     if (window.mascot) window.mascot.onCelebrate(finalWpm, finalAccuracy);
 
-    // Save result to persistence
-    window.storageManager.recordLessonResult(this.currentLesson, result);
+    // Save result to persistence & check passed/benchmark
+    const recordResult = window.storageManager.recordLessonResult(this.currentLesson, result);
+
+    // Update paragraph unlock badge in navbar
+    this.updateParagraphLockIndicator();
 
     // Launch celebratory confetti burst
     this.launchConfetti();
@@ -1038,7 +1147,7 @@ class TypePawsApp {
 
     // Show Results Modal
     setTimeout(() => {
-      this.showResultsModal(result);
+      this.showResultsModal(result, recordResult);
 
       if (isTenthLesson) {
         setTimeout(() => {
@@ -1049,15 +1158,18 @@ class TypePawsApp {
     }, 600);
   }
 
-  showResultsModal(result) {
+  showResultsModal(result, recordResult = null) {
+    const isParagraph = this.isParagraphMode && this.currentParagraph;
     const lesson = this.currentLesson;
 
-    // Stars
+    // Stars & Grade
     let stars = 1;
     let verdict = "Good effort! Practice makes paws swift!";
     let grade = "B";
 
-    if (result.accuracy >= 97 && result.wpm >= (lesson.targetWpm || 25)) {
+    const targetWpm = isParagraph ? 40 : (lesson ? lesson.targetWpm || 25 : 25);
+
+    if (result.accuracy >= 97 && result.wpm >= targetWpm) {
       stars = 3;
       verdict = "Purr-fect touch typing master! Barnaby is singing!";
       grade = "S";
@@ -1075,6 +1187,9 @@ class TypePawsApp {
     const modalGrade = document.getElementById('results-grade-badge');
     const modalVerdict = document.getElementById('results-mascot-verdict');
     const modalLessonName = document.getElementById('results-lesson-name');
+    const benchmarkBanner = document.getElementById('results-benchmark-banner');
+    const nextBtn = document.getElementById('results-next-btn');
+    const retryBtn = document.getElementById('results-retry-btn');
 
     if (modalStars) modalStars.innerHTML = '★'.repeat(stars) + '☆'.repeat(3 - stars);
     if (modalWpm) modalWpm.innerText = result.wpm;
@@ -1082,8 +1197,132 @@ class TypePawsApp {
     if (modalTime) modalTime.innerText = `${result.timeSeconds}s`;
     if (modalErrors) modalErrors.innerText = result.errors;
     if (modalGrade) modalGrade.innerText = `Grade ${grade}`;
-    if (modalVerdict) modalVerdict.innerText = `"${verdict}"`;
-    if (modalLessonName) modalLessonName.innerText = `Lesson #${lesson.number}: ${lesson.title}`;
+
+    if (isParagraph) {
+      if (modalLessonName) modalLessonName.innerText = `📜 Long Paragraph: ${this.currentParagraph.title}`;
+      if (modalVerdict) modalVerdict.innerText = `"Masterful endurance! You completed this full-length ${this.currentParagraph.category} piece!"`;
+
+      if (benchmarkBanner) {
+        benchmarkBanner.style.display = 'block';
+        benchmarkBanner.className = 'results-benchmark-banner passed';
+        benchmarkBanner.innerHTML = `<span class="bench-icon">🏆</span> <div><b>Paragraph Mastered!</b> Real-world stamina practice complete! 🐾</div>`;
+      }
+
+      if (nextBtn) {
+        nextBtn.disabled = false;
+        nextBtn.className = 'btn btn-primary';
+        nextBtn.innerHTML = 'Next Story ⏩';
+        nextBtn.title = '';
+        nextBtn.onclick = () => {
+          this.closeModal('results-modal');
+          this.nextParagraphPractice();
+        };
+      }
+      if (retryBtn) {
+        retryBtn.className = 'btn btn-outline';
+        retryBtn.onclick = () => {
+          this.closeModal('results-modal');
+          this.restartParagraphPractice();
+        };
+      }
+    } else {
+      // Regular Lesson Result
+      if (modalLessonName) modalLessonName.innerText = `Lesson #${lesson.number}: ${lesson.title}`;
+
+      const benchmark = window.storageManager.getBenchmark(this.currentLevelKey, lesson.number);
+      const isPassed = recordResult ? recordResult.passed : window.storageManager.isLessonPassed(this.currentLevelKey, lesson.number, result);
+
+      if (benchmarkBanner) {
+        benchmarkBanner.style.display = 'block';
+
+        if (benchmark.required) {
+          if (isPassed) {
+            benchmarkBanner.className = 'results-benchmark-banner passed';
+            benchmarkBanner.innerHTML = `
+              <span class="bench-icon">✓</span>
+              <div>
+                <b>Benchmark Passed!</b> (${result.wpm} WPM ≥ ${benchmark.minWpm} & ${result.accuracy}% Acc ≥ ${benchmark.minAccuracy}%)
+                <div style="font-size: 0.85rem; margin-top: 2px;">Lesson #${lesson.number < 100 ? lesson.number + 1 : 100} is now unlocked! 🎉</div>
+              </div>
+            `;
+            verdict = "Benchmark conquered! Spectacular typing speed! Barnaby is doing backflips! 🐾";
+
+            if (nextBtn) {
+              nextBtn.disabled = false;
+              nextBtn.className = 'btn btn-primary';
+              nextBtn.innerHTML = 'Next Lesson ⏩';
+              nextBtn.title = '';
+              nextBtn.onclick = () => {
+                this.closeModal('results-modal');
+                this.startNextLesson();
+              };
+            }
+            if (retryBtn) {
+              retryBtn.className = 'btn btn-outline';
+              retryBtn.onclick = () => {
+                this.closeModal('results-modal');
+                this.restartPractice();
+              };
+            }
+          } else {
+            // Failed Benchmark!
+            benchmarkBanner.className = 'results-benchmark-banner failed';
+            benchmarkBanner.innerHTML = `
+              <span class="bench-icon">⚠️</span>
+              <div>
+                <b>Benchmark Not Met:</b> Requires <b>${benchmark.minWpm}+ WPM</b> and <b>${benchmark.minAccuracy}%+ Accuracy</b> to pass.
+                <div style="font-size: 0.85rem; margin-top: 2px;">You scored ${result.wpm} WPM & ${result.accuracy}% Acc. Lesson #${lesson.number + 1} remains locked.</div>
+              </div>
+            `;
+            verdict = `Almost there! You need ${benchmark.minWpm} WPM to pass. Tap Try Again to unlock Lesson #${lesson.number + 1}! 🐾`;
+
+            if (nextBtn) {
+              nextBtn.disabled = true;
+              nextBtn.className = 'btn btn-outline disabled-locked';
+              nextBtn.innerHTML = '🔒 Next Lesson Locked';
+              nextBtn.title = `Pass with ${benchmark.minWpm}+ WPM & ${benchmark.minAccuracy}%+ Acc to unlock next lesson`;
+            }
+            if (retryBtn) {
+              retryBtn.className = 'btn btn-primary'; // Make retry button primary!
+              retryBtn.onclick = () => {
+                this.closeModal('results-modal');
+                this.restartPractice();
+              };
+            }
+          }
+        } else {
+          // Beginner or Lessons 1-5 (No Benchmark Required)
+          benchmarkBanner.className = 'results-benchmark-banner passed';
+          benchmarkBanner.innerHTML = `
+            <span class="bench-icon">✓</span>
+            <div>
+              <b>Lesson Complete & Passed!</b>
+              <div style="font-size: 0.85rem; margin-top: 2px;">Lesson #${lesson.number < 100 ? lesson.number + 1 : 100} is unlocked! 🐾</div>
+            </div>
+          `;
+
+          if (nextBtn) {
+            nextBtn.disabled = false;
+            nextBtn.className = 'btn btn-primary';
+            nextBtn.innerHTML = 'Next Lesson ⏩';
+            nextBtn.title = '';
+            nextBtn.onclick = () => {
+              this.closeModal('results-modal');
+              this.startNextLesson();
+            };
+          }
+          if (retryBtn) {
+            retryBtn.className = 'btn btn-outline';
+            retryBtn.onclick = () => {
+              this.closeModal('results-modal');
+              this.restartPractice();
+            };
+          }
+        }
+      }
+
+      if (modalVerdict) modalVerdict.innerText = `"${verdict}"`;
+    }
 
     this.openModal('results-modal');
   }
@@ -1403,12 +1642,456 @@ class TypePawsApp {
       this.currentLevelKey = 'beginner';
       this.currentLesson = null;
       this.updateHeaderLevelBadge();
+      this.updateParagraphLockIndicator();
       this.renderDashboard();
       this.closeAllModals();
       const userDropdown = document.getElementById('user-dropdown-card');
       if (userDropdown) userDropdown.classList.remove('open');
+      if (this.currentView === 'paragraphs') {
+        this.renderParagraphsView();
+      } else if (this.currentView === 'lessons') {
+        this.renderLessonsView();
+      }
       alert("✨ Everything has been reset to 0! All lessons and stats are back to starting point.");
     }
+  }
+
+  // --- LONG PARAGRAPH ARENA ENGINE ---
+
+  updateParagraphLockIndicator() {
+    const lockEl = document.getElementById('nav-paragraphs-lock');
+    if (!lockEl) return;
+    const isUnlocked = window.storageManager.isParagraphArenaUnlocked();
+    if (isUnlocked) {
+      lockEl.className = 'nav-lock-pill unlocked';
+      lockEl.innerText = '✓ Unlocked';
+    } else {
+      lockEl.className = 'nav-lock-pill locked';
+      lockEl.innerText = '🔒';
+    }
+  }
+
+  renderParagraphsView() {
+    this.updateParagraphLockIndicator();
+    const isUnlocked = window.storageManager.isParagraphArenaUnlocked();
+    const lockedWrapper = document.getElementById('paragraphs-locked-state');
+    const unlockedWrapper = document.getElementById('paragraphs-unlocked-state');
+
+    if (!isUnlocked) {
+      // Show Locked State
+      if (lockedWrapper) lockedWrapper.style.display = 'block';
+      if (unlockedWrapper) unlockedWrapper.style.display = 'none';
+
+      const bStats = window.storageManager.getLevelStats('beginner');
+      const progressText = document.getElementById('para-locked-progress-text');
+      const remainingText = document.getElementById('para-locked-remaining-text');
+      const progressBar = document.getElementById('para-locked-progress-bar');
+      const resumeBtn = document.getElementById('btn-resume-beginner-for-para');
+
+      if (progressText) {
+        progressText.innerHTML = `<b>${bStats.completedCount}</b> of 100 Beginner Lessons Completed (${bStats.percent}%)`;
+      }
+      if (remainingText) {
+        const remaining = Math.max(0, 100 - bStats.completedCount);
+        remainingText.innerText = `${remaining} lessons remaining to unlock`;
+      }
+      if (progressBar) {
+        progressBar.style.width = `${bStats.percent}%`;
+      }
+      if (resumeBtn) {
+        const nextNum = bStats.nextLessonNum || 1;
+        resumeBtn.innerHTML = `<span>▶</span> Continue Beginner Lesson #${nextNum}`;
+        resumeBtn.onclick = () => {
+          this.selectLevel('beginner');
+          this.loadLessonByNumber('beginner', nextNum);
+        };
+      }
+
+      // Render Preview Cards
+      const previewGrid = document.getElementById('para-preview-grid');
+      if (previewGrid && window.LONG_PARAGRAPHS) {
+        previewGrid.innerHTML = window.LONG_PARAGRAPHS.map((p, idx) => `
+          <div class="para-preview-card locked">
+            <div class="para-preview-top">
+              <span class="para-cat-chip">${p.category}</span>
+              <span class="para-len-chip">${p.length}</span>
+            </div>
+            <h4 class="para-preview-title">${p.title}</h4>
+            <p class="para-preview-snippet">"${p.text.substring(0, 95)}..."</p>
+            <div class="para-preview-lock-tag">🔒 Unlocks after Lesson #100</div>
+          </div>
+        `).join('');
+      }
+    } else {
+      // Show Unlocked State
+      if (lockedWrapper) lockedWrapper.style.display = 'none';
+      if (unlockedWrapper) unlockedWrapper.style.display = 'block';
+
+      // Populate story select if empty
+      const storySelect = document.getElementById('para-story-select');
+      if (storySelect && (!storySelect.children || storySelect.children.length === 0)) {
+        storySelect.innerHTML = (window.LONG_PARAGRAPHS || []).map((p, idx) => `
+          <option value="${p.id}">${idx + 1}. ${p.title} (${p.category})</option>
+        `).join('');
+      }
+
+      // Load initial story if not yet started
+      if (!this.currentParagraph && window.LONG_PARAGRAPHS && window.LONG_PARAGRAPHS.length > 0) {
+        const selectedId = storySelect ? storySelect.value : window.LONG_PARAGRAPHS[0].id;
+        this.loadParagraphStory(selectedId);
+      } else if (this.currentParagraph) {
+        setTimeout(() => {
+          const inputArea = document.getElementById('para-hidden-input');
+          if (inputArea) inputArea.focus();
+        }, 100);
+      }
+    }
+  }
+
+  bindParagraphEvents() {
+    // Story selector dropdown
+    const storySelect = document.getElementById('para-story-select');
+    if (storySelect) {
+      storySelect.addEventListener('change', (e) => {
+        this.loadParagraphStory(e.target.value);
+      });
+    }
+
+    // Restart button
+    const restartBtn = document.getElementById('para-restart-btn');
+    if (restartBtn) {
+      restartBtn.addEventListener('click', () => {
+        this.restartParagraphPractice();
+      });
+    }
+
+    // Next story button
+    const nextBtn = document.getElementById('para-next-btn');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        this.nextParagraphPractice();
+      });
+    }
+
+    // Clicking paragraph typing area focuses input
+    const arenaBox = document.getElementById('para-typing-arena-box');
+    const inputArea = document.getElementById('para-hidden-input');
+    if (arenaBox && inputArea) {
+      arenaBox.addEventListener('click', () => {
+        inputArea.focus();
+      });
+    }
+
+    // Input events for paragraph typing
+    if (inputArea) {
+      inputArea.addEventListener('input', (e) => {
+        this.handleParagraphInput(e);
+      });
+      inputArea.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace') {
+          this.handleParagraphBackspace();
+        } else if (e.key === 'Tab') {
+          e.preventDefault();
+          this.restartParagraphPractice();
+        }
+      });
+    }
+  }
+
+  loadParagraphStory(storyId) {
+    const list = window.LONG_PARAGRAPHS || [];
+    const story = list.find(p => p.id === storyId) || list[0];
+    if (story) {
+      const storySelect = document.getElementById('para-story-select');
+      if (storySelect) storySelect.value = story.id;
+      this.startParagraphPractice(story);
+    }
+  }
+
+  startParagraphPractice(story) {
+    this.isParagraphMode = true;
+    this.currentParagraph = story;
+    this.paraText = story.text;
+    this.paraIndex = 0;
+    this.paraCorrectChars = 0;
+    this.paraTotalKeystrokes = 0;
+    this.paraErrorCount = 0;
+    this.isParaPracticing = false;
+    this.paraStartTime = null;
+    this.paraElapsedSeconds = 0;
+    clearInterval(this.paraTimerInterval);
+
+    // Update UI headers
+    const badgeEl = document.getElementById('para-category-badge');
+    const titleEl = document.getElementById('para-story-title');
+    const wordCountEl = document.getElementById('para-word-count');
+
+    if (badgeEl) badgeEl.innerText = story.category;
+    if (titleEl) titleEl.innerText = story.title;
+    if (wordCountEl) wordCountEl.innerText = story.length;
+
+    // Reset stats display
+    this.updateParaStatsDisplay(0, 100, 0, 0, 0);
+
+    // Render text characters
+    this.renderParagraphSpans();
+
+    // Reset mascot
+    if (window.mascot) {
+      window.mascot.onIdle();
+      window.mascot.updateBubble(`Ready for the long haul! Start typing whenever you're ready 🐾`, false);
+    }
+
+    // Set target key on virtual keyboard if present
+    if (window.virtualKeyboard && this.paraText.length > 0) {
+      window.virtualKeyboard.setTargetKey(this.paraText[0]);
+    }
+
+    // Focus input
+    const inputArea = document.getElementById('para-hidden-input');
+    if (inputArea) {
+      inputArea.value = "";
+      inputArea.focus();
+    }
+  }
+
+  renderParagraphSpans() {
+    const container = document.getElementById('para-sample-text-display');
+    if (!container) return;
+
+    let html = "";
+    let globalIdx = 0;
+    const words = this.paraText.split(' ');
+
+    words.forEach((w, wIdx) => {
+      html += `<span class="word-box" data-word-idx="${wIdx}">`;
+      for (let i = 0; i < w.length; i++) {
+        const char = w[i];
+        const isCurrent = globalIdx === 0 ? 'current' : '';
+        html += `<span class="char-span ${isCurrent}" data-index="${globalIdx}">${char}</span>`;
+        globalIdx++;
+      }
+      html += `</span>`;
+
+      // Space between words
+      if (wIdx < words.length - 1) {
+        html += `<span class="word-box space-box"><span class="char-span" data-index="${globalIdx}"> </span></span>`;
+        globalIdx++;
+      }
+    });
+
+    container.innerHTML = html;
+  }
+
+  handleParagraphInput(e) {
+    const inputArea = document.getElementById('para-hidden-input');
+    if (!inputArea) return;
+
+    const val = inputArea.value;
+    if (val.length === 0) return;
+
+    // Start timer on first keystroke
+    if (!this.isParaPracticing) {
+      this.isParaPracticing = true;
+      this.paraStartTime = Date.now();
+      this.paraTimerInterval = setInterval(() => {
+        this.paraElapsedSeconds++;
+        this.recalculateParaStats();
+      }, 1000);
+    }
+
+    // Process all newly entered characters
+    for (let i = 0; i < val.length; i++) {
+      this.processParagraphChar(val[i]);
+    }
+
+    inputArea.value = "";
+  }
+
+  processParagraphChar(typedChar) {
+    if (this.paraIndex >= this.paraText.length) return;
+
+    this.paraTotalKeystrokes++;
+    const expectedChar = this.paraText[this.paraIndex];
+    const container = document.getElementById('para-sample-text-display');
+    const span = container ? container.querySelector(`.char-span[data-index="${this.paraIndex}"]`) : null;
+
+    if (typedChar === expectedChar) {
+      // Correct!
+      this.paraCorrectChars++;
+      if (span) {
+        span.classList.remove('current', 'incorrect');
+        span.classList.add('correct');
+      }
+
+      if (window.soundEngine) window.soundEngine.playKeyClick(typedChar);
+
+      const currentWpm = this.calculateCurrentParaWpm();
+      if (window.mascot) window.mascot.onKeystroke(currentWpm);
+      if (window.virtualKeyboard) window.virtualKeyboard.highlightPressedKey(this.getKeyboardCode(typedChar));
+
+      this.paraIndex++;
+
+      // Check completion
+      if (this.paraIndex >= this.paraText.length) {
+        this.finishParagraphPractice();
+        return;
+      }
+
+      if (window.virtualKeyboard && this.paraIndex < this.paraText.length) {
+        window.virtualKeyboard.setTargetKey(this.paraText[this.paraIndex]);
+      }
+    } else {
+      // Error!
+      this.paraErrorCount++;
+      if (span) {
+        span.classList.remove('current');
+        span.classList.add('incorrect', 'shake-char');
+        setTimeout(() => span.classList.remove('shake-char'), 300);
+      }
+
+      if (window.soundEngine) window.soundEngine.playError();
+      if (window.mascot) window.mascot.onError(expectedChar);
+
+      // Advance anyway to avoid stalling
+      this.paraIndex++;
+
+      if (this.paraIndex >= this.paraText.length) {
+        this.finishParagraphPractice();
+        return;
+      }
+
+      if (window.virtualKeyboard && this.paraIndex < this.paraText.length) {
+        window.virtualKeyboard.setTargetKey(this.paraText[this.paraIndex]);
+      }
+    }
+
+    // Highlight next char
+    const nextSpan = container ? container.querySelector(`.char-span[data-index="${this.paraIndex}"]`) : null;
+    if (nextSpan) nextSpan.classList.add('current');
+
+    this.recalculateParaStats();
+  }
+
+  handleParagraphBackspace() {
+    if (this.paraIndex > 0) {
+      const container = document.getElementById('para-sample-text-display');
+      const curSpan = container ? container.querySelector(`.char-span[data-index="${this.paraIndex}"]`) : null;
+      if (curSpan) curSpan.classList.remove('current');
+
+      this.paraIndex--;
+
+      const prevSpan = container ? container.querySelector(`.char-span[data-index="${this.paraIndex}"]`) : null;
+      if (prevSpan) {
+        if (prevSpan.classList.contains('correct')) {
+          this.paraCorrectChars = Math.max(0, this.paraCorrectChars - 1);
+        }
+        prevSpan.classList.remove('correct', 'incorrect');
+        prevSpan.classList.add('current');
+      }
+
+      if (window.virtualKeyboard) {
+        window.virtualKeyboard.setTargetKey(this.paraText[this.paraIndex]);
+      }
+
+      this.recalculateParaStats();
+    }
+  }
+
+  calculateCurrentParaWpm() {
+    if (!this.paraStartTime) return 0;
+    const elapsedMinutes = (Date.now() - this.paraStartTime) / 60000;
+    if (elapsedMinutes < 0.02) return 0;
+    const words = this.paraCorrectChars / 5;
+    return Math.max(0, Math.round(words / elapsedMinutes));
+  }
+
+  recalculateParaStats() {
+    const wpm = this.calculateCurrentParaWpm();
+    const accuracy = this.paraTotalKeystrokes === 0
+      ? 100
+      : Math.max(0, Math.round((this.paraCorrectChars / this.paraTotalKeystrokes) * 100));
+    const progressPercent = Math.min(100, Math.round((this.paraIndex / this.paraText.length) * 100));
+
+    this.updateParaStatsDisplay(wpm, accuracy, this.paraElapsedSeconds, this.paraErrorCount, progressPercent);
+  }
+
+  updateParaStatsDisplay(wpm, accuracy, timeSeconds, errors, progressPercent) {
+    const wpmEl = document.getElementById('para-live-wpm');
+    const accEl = document.getElementById('para-live-acc');
+    const timeEl = document.getElementById('para-live-time');
+    const errEl = document.getElementById('para-live-errors');
+    const barEl = document.getElementById('para-progress-bar');
+    const pctEl = document.getElementById('para-progress-pct');
+
+    if (wpmEl) wpmEl.innerText = wpm;
+    if (accEl) accEl.innerText = `${accuracy}%`;
+    if (timeEl) {
+      const mins = Math.floor(timeSeconds / 60);
+      const secs = timeSeconds % 60;
+      timeEl.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+    if (errEl) errEl.innerText = errors;
+    if (barEl) barEl.style.width = `${progressPercent}%`;
+    if (pctEl) pctEl.innerText = `${progressPercent}%`;
+  }
+
+  finishParagraphPractice() {
+    clearInterval(this.paraTimerInterval);
+    this.isParaPracticing = false;
+
+    const timeSpent = Math.max(1, this.paraElapsedSeconds);
+    const finalWpm = Math.round((this.paraCorrectChars / 5) / (timeSpent / 60));
+    const finalAccuracy = this.paraTotalKeystrokes === 0
+      ? 100
+      : Math.max(0, Math.round((this.paraCorrectChars / this.paraTotalKeystrokes) * 100));
+
+    const result = {
+      wpm: finalWpm,
+      accuracy: finalAccuracy,
+      timeSeconds: timeSpent,
+      errors: this.paraErrorCount,
+      completed: true
+    };
+
+    if (window.soundEngine) window.soundEngine.playVictory();
+    if (window.mascot) window.mascot.onCelebrate(finalWpm, finalAccuracy);
+
+    // Record stats
+    const stats = window.storageManager.data.stats;
+    stats.testsCompleted += 1;
+    stats.totalTimeSeconds += timeSpent;
+    stats.totalErrors += this.paraErrorCount;
+    stats.topWpm = Math.max(stats.topWpm, finalWpm);
+    window.storageManager.data.recentTests.push({
+      label: `Long: ${this.currentParagraph.title.substring(0, 16)}...`,
+      wpm: finalWpm,
+      accuracy: finalAccuracy
+    });
+    if (window.storageManager.data.recentTests.length > 12) {
+      window.storageManager.data.recentTests.shift();
+    }
+    window.storageManager.save();
+
+    this.launchConfetti();
+
+    setTimeout(() => {
+      this.showResultsModal(result);
+    }, 600);
+  }
+
+  restartParagraphPractice() {
+    if (this.currentParagraph) {
+      this.startParagraphPractice(this.currentParagraph);
+    }
+  }
+
+  nextParagraphPractice() {
+    const list = window.LONG_PARAGRAPHS || [];
+    if (list.length === 0) return;
+    const curIdx = list.findIndex(p => p.id === (this.currentParagraph ? this.currentParagraph.id : ''));
+    const nextIdx = (curIdx + 1) % list.length;
+    this.loadParagraphStory(list[nextIdx].id);
   }
 }
 
