@@ -1607,9 +1607,15 @@ class TypePawsApp {
       const user = window.storageManager.logIn(identifierInput.value, passwordInput.value);
       this.closeModal('auth-modal');
       this.updateAuthUI();
+      this.updateParagraphLockIndicator();
       this.currentLevelKey = window.storageManager.getCurrentLevel();
       this.updateHeaderLevelBadge();
       this.renderDashboard();
+      if (this.currentView === 'paragraphs') {
+        this.renderParagraphsView();
+      } else if (this.currentView === 'lessons') {
+        this.renderLessonsView();
+      }
       if (identifierInput) identifierInput.value = '';
       if (passwordInput) passwordInput.value = '';
       alert(`🐾 Welcome back, ${user.username}! Your stats and lessons have been loaded.`);
@@ -1626,7 +1632,13 @@ class TypePawsApp {
   handleLogout() {
     window.storageManager.logOut();
     this.updateAuthUI();
+    this.updateParagraphLockIndicator();
     this.renderDashboard();
+    if (this.currentView === 'paragraphs') {
+      this.renderParagraphsView();
+    } else if (this.currentView === 'lessons') {
+      this.renderLessonsView();
+    }
     const userDropdown = document.getElementById('user-dropdown-card');
     if (userDropdown) userDropdown.classList.remove('open');
     alert("You have logged out. All active session progress has been reset to 0 for guest mode.");

@@ -11,16 +11,109 @@ class StorageManager {
   constructor() {
     this.accounts = this.loadAccounts();
     this.data = this.load();
+
+    // If current user is DemoTypist, ensure the 100 completed beginner lessons are present so Long Paragraphs is open
+    if (this.data.currentUser && (this.data.currentUser.username.toLowerCase() === 'demotypist' || this.data.currentUser.email === 'demo@typepaws.org')) {
+      const demoAcc = this.getDemoTypistAccount();
+      this.data.completedLessons = demoAcc.data.completedLessons;
+      this.data.stats = demoAcc.data.stats;
+      this.data.lastLesson.beginner = 100;
+      this.save();
+    }
+  }
+
+  getDemoTypistAccount() {
+    const demoCompleted = {};
+    for (let i = 1; i <= 100; i++) {
+      demoCompleted[`b_${i}`] = {
+        completed: true,
+        passed: true,
+        stars: 3,
+        bestWpm: 38 + (i % 8),
+        bestAccuracy: 98,
+        lastPracticed: new Date().toISOString()
+      };
+    }
+
+    const defaultBadges = [
+      { id: 'first_clack', name: 'First Clack', icon: '🐾', desc: 'Complete your very first typing exercise', unlocked: true, date: 'Completed' },
+      { id: 'ten_club', name: '10-Lesson Scholar', icon: '🎓', desc: 'Finish 10 practice lessons', unlocked: true, date: 'Completed' },
+      { id: 'home_row_hero', name: 'Home Row Hero', icon: '🏰', desc: 'Complete all 20 home row lessons', unlocked: true, date: 'Completed' },
+      { id: 'speed_cheetah', name: 'Speed Cheetah', icon: '⚡', desc: 'Reach 40+ WPM in any lesson', unlocked: true, date: 'Completed' },
+      { id: 'bullseye', name: 'Purr-fect Bullseye', icon: '🎯', desc: 'Score 100% accuracy on a lesson', unlocked: true, date: 'Completed' },
+      { id: 'streak_flame', name: 'Streak Flame', icon: '🔥', desc: 'Practice 3 days in a row', unlocked: true, date: 'Completed' },
+      { id: 'sonic_claws', name: 'Sonic Claws', icon: '🚀', desc: 'Reach 60+ WPM in any lesson', unlocked: false, date: null },
+      { id: 'centurion', name: 'The Centurion', icon: '👑', desc: 'Complete 50 lessons in any path', unlocked: true, date: 'Completed' },
+      { id: 'zen_master', name: 'Blind Touch Zen', icon: '🧘', desc: 'Complete an Advanced lesson with 98%+ accuracy', unlocked: false, date: null }
+    ];
+
+    return {
+      id: 'user_demotypist',
+      username: 'DemoTypist',
+      email: 'demo@typepaws.org',
+      password: 'password',
+      avatar: '🐱',
+      createdAt: new Date().toISOString(),
+      data: {
+        completedLessons: demoCompleted,
+        stats: {
+          totalTimeSeconds: 5400,
+          testsCompleted: 100,
+          averageWpm: 42,
+          topWpm: 58,
+          streakDays: 7,
+          totalErrors: 64,
+          totalKeystrokes: 42000,
+          averageAccuracy: 98.2
+        },
+        recentTests: [
+          { label: 'Lesson #96', wpm: 42, accuracy: 98 },
+          { label: 'Lesson #97', wpm: 44, accuracy: 99 },
+          { label: 'Lesson #98', wpm: 41, accuracy: 97 },
+          { label: 'Lesson #99', wpm: 45, accuracy: 98 },
+          { label: 'Lesson #100', wpm: 46, accuracy: 100 }
+        ],
+        badges: defaultBadges,
+        lastLesson: {
+          beginner: 100,
+          intermediate: 1,
+          advanced: 1
+        },
+        currentLevel: 'beginner',
+        settings: {
+          darkMode: false,
+          soundTheme: 'mechanical',
+          volume: 0.5,
+          soundMuted: false,
+          keyboardHints: true,
+          mascotSkin: 'cat',
+          timerMode: 'passage'
+        }
+      }
+    };
   }
 
   loadAccounts() {
+    let accounts = [];
     try {
       const raw = localStorage.getItem(ACCOUNTS_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) accounts = JSON.parse(raw);
     } catch (e) {
       console.warn("Failed to load accounts:", e);
     }
-    return [];
+
+    // Always ensure DemoTypist exists with the full 100 beginner lessons completed
+    const demoAcc = this.getDemoTypistAccount();
+    const existingIdx = accounts.findIndex(a => 
+      a.username.toLowerCase() === 'demotypist' || a.email.toLowerCase() === 'demo@typepaws.org'
+    );
+    if (existingIdx === -1) {
+      accounts.push(demoAcc);
+    } else {
+      accounts[existingIdx] = demoAcc;
+    }
+
+    return accounts;
   }
 
   saveAccounts() {
@@ -430,6 +523,35 @@ class StorageManager {
   logIn(identifier, password) {
     identifier = (identifier || '').trim().toLowerCase();
     
+    // Explicit Demo / DemoTypist login: always loads open Long Paragraphs version
+    if (identifier === 'demo' || identifier === 'demotypist' || identifier === 'guest' || identifier === 'demo@typepaws.org') {
+      const demoAcc = this.getDemoTypistAccount();
+      const idx = this.accounts.findIndex(a => a.username.toLowerCase() === 'demotypist');
+      if (idx !== -1) {
+        this.accounts[idx] = demoAcc;
+      } else {
+        this.accounts.push(demoAcc);
+      }
+      this.saveAccounts();
+
+      this.data.currentUser = {
+        id: demoAcc.id,
+        username: demoAcc.username,
+        email: demoAcc.email,
+        avatar: demoAcc.avatar
+      };
+      this.data.completedLessons = demoAcc.data.completedLessons;
+      this.data.stats = demoAcc.data.stats;
+      this.data.recentTests = demoAcc.data.recentTests;
+      this.data.badges = demoAcc.data.badges;
+      this.data.lastLesson = demoAcc.data.lastLesson;
+      this.data.currentLevel = demoAcc.data.currentLevel;
+      if (demoAcc.data.settings) this.data.settings = { ...this.data.settings, ...demoAcc.data.settings };
+
+      this.save();
+      return this.data.currentUser;
+    }
+
     // Find account by email or username
     const acc = this.accounts.find(a => 
       a.email.toLowerCase() === identifier || 
@@ -437,10 +559,6 @@ class StorageManager {
     );
 
     if (!acc) {
-      // Demo / Quick guest login if not found
-      if (identifier === 'demo' || identifier === 'guest') {
-        return this.signUp('DemoTypist', 'demo@typepaws.org', 'password', '🐱');
-      }
       throw new Error("Account not found. Please check your credentials or Sign Up!");
     }
 

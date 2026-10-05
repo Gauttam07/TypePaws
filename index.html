@@ -24,39 +24,41 @@
 
     <!-- ==================== HEADER NAVBAR ==================== -->
     <header class="header-navbar">
-      <div class="brand-logo" onclick="window.app.switchView('dashboard')" role="button" aria-label="TypePaws Home">
-        <span class="brand-icon">🐾</span>
-        <span class="brand-text">Type<span class="brand-highlight">Paws</span></span>
+      <!-- Left: Brand Logo & Current Level Selector Pill -->
+      <div class="nav-brand-group">
+        <div class="brand-logo" onclick="window.app.switchView('dashboard')" role="button" aria-label="TypePaws Home">
+          <span class="brand-icon">🐾</span>
+          <span class="brand-text">Type<span class="brand-highlight">Paws</span></span>
+        </div>
+
+        <div class="level-badge-pill" id="current-level-badge" title="Click to change your typing level">
+          <span class="badge-icon">🐾</span>
+          <span class="badge-label">Beginner</span>
+          <span class="badge-chevron">▾</span>
+        </div>
       </div>
 
-      <!-- Current Learning Path Badge Switcher -->
-      <div class="level-badge-pill" id="current-level-badge" title="Click to change your typing level">
-        <span class="badge-icon">🐾</span>
-        <span class="badge-label">Beginner</span>
-        <span class="badge-chevron">▾</span>
-      </div>
-
-      <!-- Nav Links -->
+      <!-- Center: Segmented Navigation Pills -->
       <nav class="nav-links">
         <button class="nav-link active" data-view="dashboard">
           <span>🏠</span> Dashboard
         </button>
         <button class="nav-link" data-view="practice">
-          <span>⌨️</span> Practice Arena
+          <span>⌨️</span> Practice
         </button>
         <button class="nav-link" data-view="lessons">
-          <span>📚</span> Lessons (100)
+          <span>📚</span> Lessons
         </button>
         <button class="nav-link" data-view="paragraphs" id="nav-btn-paragraphs">
-          <span>📜</span> Long Paragraphs <span class="nav-lock-pill" id="nav-paragraphs-lock">🔒</span>
+          <span>📜</span> Paragraphs <span class="nav-lock-pill" id="nav-paragraphs-lock">🔒</span>
         </button>
       </nav>
 
-      <!-- Header Action Controls -->
+      <!-- Right: Action Controls (Auth, Theme, Audio, Settings, Mobile Toggle) -->
       <div class="nav-actions">
         <!-- Guest Auth Trigger Button -->
-        <button class="btn btn-primary btn-sm" id="auth-nav-btn" style="box-shadow: none;">
-          <span>🐾</span> Log In / Sign Up
+        <button class="btn btn-primary btn-sm nav-auth-btn" id="auth-nav-btn">
+          <span>🐾</span> Log In
         </button>
 
         <!-- Logged In User Profile Menu -->
