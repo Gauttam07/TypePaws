@@ -336,6 +336,23 @@ class TypePawsApp {
       });
     }
 
+    // Testing helper button in Settings: Set Intermediate & Advanced to Lesson 5
+    const btnSetLesson5 = document.getElementById('btn-set-lesson5-test');
+    if (btnSetLesson5) {
+      btnSetLesson5.addEventListener('click', () => {
+        window.storageManager.setIntermediateAndAdvancedToLesson5();
+        this.renderDashboard();
+        if (this.currentView === 'lessons') {
+          this.renderLessonsView();
+        }
+        this.closeModal('settings-modal');
+        if (window.mascot) {
+          window.mascot.updateBubble("⚡ Intermediate & Advanced lessons 1-5 set to passed! Lesson 6 benchmark is now unlocked! 🐾", true);
+        }
+        alert("⚡ Intermediate and Advanced lessons 1-5 are now marked passed! Lesson #6 (where the benchmark test begins: 35 WPM / 90% Acc for Intermediate, 55 WPM / 94% Acc for Advanced) is now UNLOCKED and ready for your test.");
+      });
+    }
+
     // Testing helper button in Settings: Unlock all 100 Beginner Lessons
     const unlockBegBtn = document.getElementById('btn-unlock-beginner-test');
     if (unlockBegBtn) {

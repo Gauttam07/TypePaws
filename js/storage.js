@@ -24,6 +24,7 @@ class StorageManager {
 
   getDemoTypistAccount() {
     const demoCompleted = {};
+    // 100 Beginner lessons completed & passed (Long Paragraphs open)
     for (let i = 1; i <= 100; i++) {
       demoCompleted[`b_${i}`] = {
         completed: true,
@@ -31,6 +32,30 @@ class StorageManager {
         stars: 3,
         bestWpm: 38 + (i % 8),
         bestAccuracy: 98,
+        lastPracticed: new Date().toISOString()
+      };
+    }
+
+    // Intermediate lessons 1-5 completed & passed (Lesson 6 benchmark unlocked!)
+    for (let i = 1; i <= 5; i++) {
+      demoCompleted[`i_${i}`] = {
+        completed: true,
+        passed: true,
+        stars: 3,
+        bestWpm: 40 + (i * 2),
+        bestAccuracy: 96,
+        lastPracticed: new Date().toISOString()
+      };
+    }
+
+    // Advanced lessons 1-5 completed & passed (Lesson 6 benchmark unlocked!)
+    for (let i = 1; i <= 5; i++) {
+      demoCompleted[`a_${i}`] = {
+        completed: true,
+        passed: true,
+        stars: 3,
+        bestWpm: 58 + (i * 2),
+        bestAccuracy: 97,
         lastPracticed: new Date().toISOString()
       };
     }
@@ -57,29 +82,29 @@ class StorageManager {
       data: {
         completedLessons: demoCompleted,
         stats: {
-          totalTimeSeconds: 5400,
-          testsCompleted: 100,
-          averageWpm: 42,
-          topWpm: 58,
+          totalTimeSeconds: 6800,
+          testsCompleted: 110,
+          averageWpm: 48,
+          topWpm: 68,
           streakDays: 7,
-          totalErrors: 64,
-          totalKeystrokes: 42000,
+          totalErrors: 72,
+          totalKeystrokes: 48000,
           averageAccuracy: 98.2
         },
         recentTests: [
-          { label: 'Lesson #96', wpm: 42, accuracy: 98 },
-          { label: 'Lesson #97', wpm: 44, accuracy: 99 },
           { label: 'Lesson #98', wpm: 41, accuracy: 97 },
           { label: 'Lesson #99', wpm: 45, accuracy: 98 },
-          { label: 'Lesson #100', wpm: 46, accuracy: 100 }
+          { label: 'Lesson #100', wpm: 46, accuracy: 100 },
+          { label: 'Inter #5', wpm: 48, accuracy: 96 },
+          { label: 'Adv #5', wpm: 66, accuracy: 98 }
         ],
         badges: defaultBadges,
         lastLesson: {
           beginner: 100,
-          intermediate: 1,
-          advanced: 1
+          intermediate: 6,
+          advanced: 6
         },
-        currentLevel: 'beginner',
+        currentLevel: 'intermediate',
         settings: {
           darkMode: false,
           soundTheme: 'mechanical',
@@ -679,6 +704,36 @@ class StorageManager {
     this.data.stats.testsCompleted = Math.max(this.data.stats.testsCompleted, 100);
     this.data.stats.averageWpm = 40;
     this.data.stats.topWpm = 48;
+    this.save();
+  }
+
+  /**
+   * Demo & Test Helper:
+   * Sets Intermediate and Advanced lessons 1-5 as completed and passed,
+   * unlocking Lesson 6 so the user can test the benchmark passing requirement.
+   */
+  setIntermediateAndAdvancedToLesson5() {
+    for (let i = 1; i <= 5; i++) {
+      this.data.completedLessons[`i_${i}`] = {
+        completed: true,
+        passed: true,
+        stars: 3,
+        bestWpm: 40 + (i * 2),
+        bestAccuracy: 96,
+        lastPracticed: new Date().toISOString()
+      };
+      this.data.completedLessons[`a_${i}`] = {
+        completed: true,
+        passed: true,
+        stars: 3,
+        bestWpm: 58 + (i * 2),
+        bestAccuracy: 97,
+        lastPracticed: new Date().toISOString()
+      };
+    }
+    this.data.lastLesson.intermediate = 6;
+    this.data.lastLesson.advanced = 6;
+    this.data.stats.testsCompleted = Math.max(this.data.stats.testsCompleted, 10);
     this.save();
   }
 
