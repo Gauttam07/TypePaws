@@ -17,13 +17,28 @@ class PerformanceChart {
     if (!this.canvas || !this.ctx) return;
 
     if (!data || data.length === 0) {
-      data = [
-        { label: 'Test 1', wpm: 25, accuracy: 92 },
-        { label: 'Test 2', wpm: 30, accuracy: 94 },
-        { label: 'Test 3', wpm: 34, accuracy: 96 },
-        { label: 'Test 4', wpm: 39, accuracy: 97 },
-        { label: 'Test 5', wpm: 43, accuracy: 98 }
-      ];
+      const dpr = window.devicePixelRatio || 1;
+      const rect = this.canvas.getBoundingClientRect();
+      const width = rect.width || 600;
+      const height = rect.height || 220;
+
+      this.canvas.width = width * dpr;
+      this.canvas.height = height * dpr;
+      this.ctx.scale(dpr, dpr);
+
+      const isDark = document.body.classList.contains('dark-theme');
+      const textColor = isDark ? '#94a3b8' : '#64748b';
+
+      this.ctx.clearRect(0, 0, width, height);
+
+      this.ctx.font = 'bold 13px sans-serif';
+      this.ctx.fillStyle = textColor;
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText("📈 No practice sessions yet", width / 2, height / 2 - 10);
+      this.ctx.font = '12px sans-serif';
+      this.ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
+      this.ctx.fillText("Complete your first lesson to track your speed progression here! 🐾", width / 2, height / 2 + 15);
+      return;
     }
 
     const dpr = window.devicePixelRatio || 1;

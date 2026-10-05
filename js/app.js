@@ -44,6 +44,7 @@ class TypePawsApp {
 
     this.bindEvents();
     this.updateHeaderLevelBadge();
+    this.updateAuthUI();
     this.renderDashboard();
 
     // Check first-time onboarding
@@ -60,6 +61,84 @@ class TypePawsApp {
         if (view) this.switchView(view);
       });
     });
+
+    // Auth trigger button
+    const authNavBtn = document.getElementById('auth-nav-btn');
+    if (authNavBtn) {
+      authNavBtn.addEventListener('click', () => this.openAuthModal('signup', false));
+    }
+
+    // User profile dropdown toggle
+    const userPillBtn = document.getElementById('user-pill-btn');
+    const userDropdown = document.getElementById('user-dropdown-card');
+    if (userPillBtn && userDropdown) {
+      userPillBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        userDropdown.classList.toggle('open');
+      });
+      document.addEventListener('click', () => {
+        userDropdown.classList.remove('open');
+      });
+    }
+
+    const btnDropdownProfile = document.getElementById('btn-dropdown-profile');
+    if (btnDropdownProfile) {
+      btnDropdownProfile.addEventListener('click', () => {
+        this.switchView('dashboard');
+        if (userDropdown) userDropdown.classList.remove('open');
+      });
+    }
+
+    const btnDropdownReset = document.getElementById('btn-dropdown-reset');
+    if (btnDropdownReset) {
+      btnDropdownReset.addEventListener('click', () => this.resetAllToZero());
+    }
+
+    const btnDropdownLogout = document.getElementById('btn-dropdown-logout');
+    if (btnDropdownLogout) {
+      btnDropdownLogout.addEventListener('click', () => this.handleLogout());
+    }
+
+    // Auth modal tabs
+    const tabSignup = document.getElementById('tab-btn-signup');
+    const tabLogin = document.getElementById('tab-btn-login');
+    const formSignup = document.getElementById('form-signup');
+    const formLogin = document.getElementById('form-login');
+
+    if (tabSignup && tabLogin && formSignup && formLogin) {
+      tabSignup.addEventListener('click', () => {
+        tabSignup.classList.add('active');
+        tabLogin.classList.remove('active');
+        formSignup.style.display = 'block';
+        formLogin.style.display = 'none';
+      });
+      tabLogin.addEventListener('click', () => {
+        tabLogin.classList.add('active');
+        tabSignup.classList.remove('active');
+        formLogin.style.display = 'block';
+        formSignup.style.display = 'none';
+      });
+    }
+
+    // Mascot Avatar selection options
+    document.querySelectorAll('.avatar-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+      });
+    });
+
+    // Quick demo login button
+    const demoBtn = document.getElementById('btn-quick-demo-login');
+    if (demoBtn) {
+      demoBtn.addEventListener('click', () => {
+        const idInput = document.getElementById('login-identifier');
+        const pwInput = document.getElementById('login-password');
+        if (idInput) idInput.value = 'demo';
+        if (pwInput) pwInput.value = 'password';
+        this.handleLogIn();
+      });
+    }
 
     // Theme toggle
     const themeBtn = document.getElementById('theme-toggle-btn');
@@ -220,15 +299,7 @@ class TypePawsApp {
     const resetBtn = document.getElementById('btn-reset-progress');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        if (confirm("Are you sure you want to reset all practice history and progress?")) {
-          window.storageManager.resetAllData();
-          this.currentLevelKey = 'beginner';
-          this.updateHeaderLevelBadge();
-          this.renderDashboard();
-          this.closeAllModals();
-          alert("Progress has been reset! Choose your path to begin fresh.");
-          this.showLevelSelectionModal(true);
-        }
+        this.resetAllToZero();
       });
     }
   }
@@ -416,7 +487,7 @@ class TypePawsApp {
     if (avgWpmEl) avgWpmEl.innerText = globalStats.averageWpm || '--';
     if (topWpmEl) topWpmEl.innerText = globalStats.topWpm || '--';
     if (testsCountEl) testsCountEl.innerText = globalStats.testsCompleted;
-    if (streakEl) streakEl.innerText = `${globalStats.streakDays} Days 🔥`;
+    if (streakEl) streakEl.innerText = globalStats.streakDays > 0 ? `${globalStats.streakDays} Days 🔥` : '0 Days';
     if (timeEl) {
       const mins = Math.floor(globalStats.totalTimeSeconds / 60);
       timeEl.innerText = mins > 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins} mins`;
@@ -873,9 +944,19 @@ class TypePawsApp {
     // Launch celebratory confetti burst
     this.launchConfetti();
 
+    // Check if user completed 10 lessons as guest -> trigger sign up / login milestone modal!
+    const isTenthLesson = window.storageManager.shouldPromptAuth();
+
     // Show Results Modal
     setTimeout(() => {
       this.showResultsModal(result);
+
+      if (isTenthLesson) {
+        setTimeout(() => {
+          this.closeModal('results-modal');
+          this.openAuthModal('signup', true);
+        }, 1800);
+      }
     }, 600);
   }
 
@@ -1111,6 +1192,134 @@ class TypePawsApp {
     if (/[0-9]/.test(char)) return `Digit${char}`;
     if (/[a-zA-Z]/.test(char)) return `Key${char.toUpperCase()}`;
     return '';
+  }
+
+  // --- AUTHENTICATION & ZERO-RESET HANDLERS ---
+
+  updateAuthUI() {
+    const authBtn = document.getElementById('auth-nav-btn');
+    const userMenu = document.getElementById('user-profile-menu');
+    const user = window.storageManager.data.currentUser;
+
+    if (user) {
+      if (authBtn) authBtn.style.display = 'none';
+      if (userMenu) userMenu.style.display = 'block';
+
+      const avatarIcon = document.getElementById('user-avatar-icon');
+      const nameLabel = document.getElementById('user-name-label');
+      const dropAvatar = document.getElementById('dropdown-avatar');
+      const dropUser = document.getElementById('dropdown-username');
+      const dropEmail = document.getElementById('dropdown-email');
+
+      if (avatarIcon) avatarIcon.innerText = user.avatar || '🐱';
+      if (nameLabel) nameLabel.innerText = user.username || 'Typist';
+      if (dropAvatar) dropAvatar.innerText = user.avatar || '🐱';
+      if (dropUser) dropUser.innerText = user.username || 'Typist';
+      if (dropEmail) dropEmail.innerText = user.email || '';
+    } else {
+      if (authBtn) authBtn.style.display = 'inline-flex';
+      if (userMenu) userMenu.style.display = 'none';
+    }
+  }
+
+  openAuthModal(tab = 'signup', isMilestone = false) {
+    const banner = document.getElementById('auth-milestone-banner');
+    const errAlert = document.getElementById('auth-error-alert');
+    if (banner) banner.style.display = isMilestone ? 'block' : 'none';
+    if (errAlert) {
+      errAlert.style.display = 'none';
+      errAlert.innerText = '';
+    }
+
+    const tabSignup = document.getElementById('tab-btn-signup');
+    const tabLogin = document.getElementById('tab-btn-login');
+
+    if (tab === 'login') {
+      if (tabLogin) tabLogin.click();
+    } else {
+      if (tabSignup) tabSignup.click();
+    }
+
+    this.openModal('auth-modal');
+  }
+
+  handleSignUp() {
+    const usernameInput = document.getElementById('signup-username');
+    const emailInput = document.getElementById('signup-email');
+    const passwordInput = document.getElementById('signup-password');
+    const selAvatar = document.querySelector('.avatar-option.selected');
+    const avatar = selAvatar ? selAvatar.dataset.avatar : '🐱';
+    const errAlert = document.getElementById('auth-error-alert');
+
+    try {
+      const user = window.storageManager.signUp(usernameInput.value, emailInput.value, passwordInput.value, avatar);
+      this.closeModal('auth-modal');
+      this.updateAuthUI();
+      this.renderDashboard();
+      if (usernameInput) usernameInput.value = '';
+      if (emailInput) emailInput.value = '';
+      if (passwordInput) passwordInput.value = '';
+      alert(`🎉 Welcome to TypePaws, ${user.username}! Your progress is now safely saved to your account!`);
+    } catch (err) {
+      if (errAlert) {
+        errAlert.innerText = err.message;
+        errAlert.style.display = 'block';
+      } else {
+        alert(err.message);
+      }
+    }
+  }
+
+  handleLogIn() {
+    const identifierInput = document.getElementById('login-identifier');
+    const passwordInput = document.getElementById('login-password');
+    const errAlert = document.getElementById('auth-error-alert');
+
+    try {
+      const user = window.storageManager.logIn(identifierInput.value, passwordInput.value);
+      this.closeModal('auth-modal');
+      this.updateAuthUI();
+      this.currentLevelKey = window.storageManager.getCurrentLevel();
+      this.updateHeaderLevelBadge();
+      this.renderDashboard();
+      if (identifierInput) identifierInput.value = '';
+      if (passwordInput) passwordInput.value = '';
+      alert(`🐾 Welcome back, ${user.username}! Your stats and lessons have been loaded.`);
+    } catch (err) {
+      if (errAlert) {
+        errAlert.innerText = err.message;
+        errAlert.style.display = 'block';
+      } else {
+        alert(err.message);
+      }
+    }
+  }
+
+  handleLogout() {
+    window.storageManager.logOut();
+    this.updateAuthUI();
+    this.renderDashboard();
+    const userDropdown = document.getElementById('user-dropdown-card');
+    if (userDropdown) userDropdown.classList.remove('open');
+    alert("You have logged out. All active session progress has been reset to 0 for guest mode.");
+  }
+
+  /**
+   * ALWAYS RESET TO 0 EVERYTHING
+   * Wipes all completed lessons, resets stats to 0, locks badges, resets last lesson to #1.
+   */
+  resetAllToZero() {
+    if (confirm("Are you sure you want to reset everything back to 0? All completed lessons, scores, and streak records will be wiped.")) {
+      window.storageManager.resetEverythingToZero();
+      this.currentLevelKey = 'beginner';
+      this.currentLesson = null;
+      this.updateHeaderLevelBadge();
+      this.renderDashboard();
+      this.closeAllModals();
+      const userDropdown = document.getElementById('user-dropdown-card');
+      if (userDropdown) userDropdown.classList.remove('open');
+      alert("✨ Everything has been reset to 0! All lessons and stats are back to starting point.");
+    }
   }
 }
 

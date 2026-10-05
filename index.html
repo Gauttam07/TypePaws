@@ -51,6 +51,40 @@
 
       <!-- Header Action Controls -->
       <div class="nav-actions">
+        <!-- Guest Auth Trigger Button -->
+        <button class="btn btn-primary btn-sm" id="auth-nav-btn" style="box-shadow: none;">
+          <span>🐾</span> Log In / Sign Up
+        </button>
+
+        <!-- Logged In User Profile Menu -->
+        <div class="user-profile-menu" id="user-profile-menu" style="display: none;">
+          <button class="user-pill-btn" id="user-pill-btn" title="Your Account">
+            <span class="user-avatar" id="user-avatar-icon">🐱</span>
+            <span class="user-name" id="user-name-label">Typist</span>
+            <span class="badge-chevron">▾</span>
+          </button>
+          <div class="user-dropdown-card" id="user-dropdown-card">
+            <div class="dropdown-header">
+              <span class="dropdown-avatar" id="dropdown-avatar">🐱</span>
+              <div>
+                <div class="dropdown-username" id="dropdown-username">Typist</div>
+                <div class="dropdown-email" id="dropdown-email">user@typepaws.org</div>
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item" id="btn-dropdown-profile">
+              <span>🏠</span> Dashboard
+            </button>
+            <button class="dropdown-item" id="btn-dropdown-reset">
+              <span>🔄</span> Reset Everything to 0
+            </button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item text-danger" id="btn-dropdown-logout">
+              <span>🚪</span> Log Out
+            </button>
+          </div>
+        </div>
+
         <button class="icon-btn" id="theme-toggle-btn" title="Toggle Dark / Light Mode" aria-label="Toggle Theme">
           🌙
         </button>
@@ -77,17 +111,17 @@
           
           <div class="hero-progress-section">
             <div class="hero-progress-info">
-              <span id="dash-hero-progress-text">13 of 100 Practice Lessons Completed (13%)</span>
-              <span>Target: 30 WPM</span>
+              <span id="dash-hero-progress-text">0 of 100 Practice Lessons Completed (0%)</span>
+              <span>Target: 25 WPM</span>
             </div>
             <div class="progress-bar-track">
-              <div class="progress-fill" id="dash-hero-progress-bar" style="width: 13%;"></div>
+              <div class="progress-fill" id="dash-hero-progress-bar" style="width: 0%;"></div>
             </div>
           </div>
 
           <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
             <button class="btn btn-primary btn-lg" id="dash-resume-btn">
-              <span>▶</span> Resume Lesson #14: Rhythm Builder
+              <span>▶</span> Start Lesson #1: F and J Anchors
             </button>
             <button class="btn btn-outline btn-lg" onclick="window.app.switchView('lessons')">
               <span>📚</span> Browse All 100 Lessons
@@ -101,7 +135,7 @@
         <div class="metric-card">
           <div class="metric-icon-wrap metric-icon-amber">⚡</div>
           <div>
-            <div class="metric-value" id="stat-avg-wpm">34</div>
+            <div class="metric-value" id="stat-avg-wpm">--</div>
             <div class="metric-label">Average WPM</div>
           </div>
         </div>
@@ -109,7 +143,7 @@
         <div class="metric-card">
           <div class="metric-icon-wrap metric-icon-sky">🚀</div>
           <div>
-            <div class="metric-value" id="stat-top-wpm">46</div>
+            <div class="metric-value" id="stat-top-wpm">--</div>
             <div class="metric-label">Top Speed (WPM)</div>
           </div>
         </div>
@@ -117,7 +151,7 @@
         <div class="metric-card">
           <div class="metric-icon-wrap metric-icon-mint">🎯</div>
           <div>
-            <div class="metric-value" id="stat-tests-completed">13</div>
+            <div class="metric-value" id="stat-tests-completed">0</div>
             <div class="metric-label">Lessons Finished</div>
           </div>
         </div>
@@ -125,7 +159,7 @@
         <div class="metric-card">
           <div class="metric-icon-wrap metric-icon-coral">🔥</div>
           <div>
-            <div class="metric-value" id="stat-streak-days">4 Days 🔥</div>
+            <div class="metric-value" id="stat-streak-days">0 Days</div>
             <div class="metric-label">Daily Streak</div>
           </div>
         </div>
@@ -133,7 +167,7 @@
         <div class="metric-card">
           <div class="metric-icon-wrap metric-icon-purple">⏱️</div>
           <div>
-            <div class="metric-value" id="stat-total-time">64 mins</div>
+            <div class="metric-value" id="stat-total-time">0 mins</div>
             <div class="metric-label">Practice Time</div>
           </div>
         </div>
@@ -414,6 +448,96 @@
         </div>
         <button class="btn btn-outline btn-sm" id="btn-reset-progress" style="color: var(--color-error); border-color: var(--color-error-soft);">
           Reset All Data
+        </button>
+      </div>
+    </div>
+  <!-- 4. Auth Modal (Sign Up / Log In) -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="auth-modal-title">🐾 Join TypePaws</h2>
+        <button class="modal-close" onclick="window.app.closeModal('auth-modal')">&times;</button>
+      </div>
+
+      <!-- Milestone 10th Lesson Alert Banner -->
+      <div class="auth-milestone-banner" id="auth-milestone-banner" style="display: none;">
+        <div style="font-size: 1.8rem; margin-bottom: 0.2rem;">🎉 🎓 🐾</div>
+        <h3 class="auth-milestone-title">10 Lessons Finished! Pawsome Milestone!</h3>
+        <p class="auth-milestone-desc">
+          You've completed your first 10 lessons! Sign up or log in to preserve your 10 lessons, save your daily streak, unlock badges, and track your speed!
+        </p>
+      </div>
+
+      <!-- Tabs: Sign Up vs Log In -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-btn-signup" data-target="form-signup">Sign Up</button>
+        <button class="auth-tab" id="tab-btn-login" data-target="form-login">Log In</button>
+      </div>
+
+      <!-- Error Alert -->
+      <div class="auth-error-alert" id="auth-error-alert"></div>
+
+      <!-- SIGN UP FORM -->
+      <form id="form-signup" onsubmit="event.preventDefault(); window.app.handleSignUp();">
+        <div class="auth-form-group">
+          <label class="auth-label" for="signup-username">Typist Username</label>
+          <input type="text" class="auth-input" id="signup-username" placeholder="e.g. SpeedyPaws" required>
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="signup-email">Email Address</label>
+          <input type="email" class="auth-input" id="signup-email" placeholder="you@example.com" required>
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="signup-password">Password</label>
+          <input type="password" class="auth-input" id="signup-password" placeholder="Create a password" required>
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-label">Choose Your Mascot Avatar</label>
+          <div class="avatar-selector-grid" id="avatar-selector-grid">
+            <span class="avatar-option selected" data-avatar="🐱">🐱</span>
+            <span class="avatar-option" data-avatar="🐹">🐹</span>
+            <span class="avatar-option" data-avatar="💧">💧</span>
+            <span class="avatar-option" data-avatar="🦊">🦊</span>
+            <span class="avatar-option" data-avatar="🦁">🦁</span>
+            <span class="avatar-option" data-avatar="🐼">🐼</span>
+            <span class="avatar-option" data-avatar="🐰">🐰</span>
+            <span class="avatar-option" data-avatar="🐶">🐶</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 0.5rem;">
+          🐾 Create Account & Save My Progress
+        </button>
+      </form>
+
+      <!-- LOG IN FORM -->
+      <form id="form-login" style="display: none;" onsubmit="event.preventDefault(); window.app.handleLogIn();">
+        <div class="auth-form-group">
+          <label class="auth-label" for="login-identifier">Email or Username</label>
+          <input type="text" class="auth-input" id="login-identifier" placeholder="Enter username or email" required>
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="login-password">Password</label>
+          <input type="password" class="auth-input" id="login-password" placeholder="Enter your password" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 0.5rem;">
+          🐾 Log In to TypePaws
+        </button>
+
+        <button type="button" class="btn btn-outline" id="btn-quick-demo-login" style="width: 100%; margin-top: 0.6rem; font-size: 0.88rem;">
+          ⚡ Quick Demo Login
+        </button>
+      </form>
+
+      <div style="text-align: center; margin-top: 1.25rem;">
+        <button class="btn btn-sm btn-outline" style="border: none; color: var(--text-muted);" onclick="window.app.closeModal('auth-modal')">
+          Skip for now & continue as Guest
         </button>
       </div>
     </div>
