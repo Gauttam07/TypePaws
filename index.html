@@ -112,7 +112,7 @@
           <div class="hero-progress-section">
             <div class="hero-progress-info">
               <span id="dash-hero-progress-text">0 of 100 Practice Lessons Completed (0%)</span>
-              <span>Target: 25 WPM</span>
+              <span id="dash-hero-target-wpm">Target: 25 - 35 WPM</span>
             </div>
             <div class="progress-bar-track">
               <div class="progress-fill" id="dash-hero-progress-bar" style="width: 0%;"></div>
@@ -303,8 +303,17 @@
     <!-- ==================== 3. LESSONS CATALOG VIEW (100 Numbered Lessons) ==================== -->
     <section id="view-lessons" class="view-section">
       <div class="lessons-view-header">
-        <h2 class="lessons-level-title" id="lessons-level-title">🐾 Beginner: Kitten Steps</h2>
-        <p class="lessons-level-desc" id="lessons-level-desc">100 Progressive Practice Lessons across 5 Curated Sections</p>
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.5rem;">
+          <div>
+            <h2 class="lessons-level-title" id="lessons-level-title">🐾 Beginner: Kitten Steps</h2>
+            <p class="lessons-level-desc" id="lessons-level-desc">100 Progressive Practice Lessons across 5 Curated Sections</p>
+          </div>
+          <!-- Grid Form vs Detailed List Toggle -->
+          <div style="display: flex; gap: 0.4rem; background: var(--bg-surface-soft); padding: 4px; border-radius: var(--radius-full);">
+            <button class="btn btn-sm btn-primary" id="toggle-view-grid" style="box-shadow: none;">⊞ Grid Form</button>
+            <button class="btn btn-sm btn-outline" id="toggle-view-list" style="border: none; box-shadow: none;">☰ Detailed</button>
+          </div>
+        </div>
       </div>
 
       <!-- Section Filter Pills -->
@@ -451,6 +460,8 @@
         </button>
       </div>
     </div>
+  </div>
+
   <!-- 4. Auth Modal (Sign Up / Log In) -->
   <div class="modal-overlay" id="auth-modal">
     <div class="modal-backdrop"></div>

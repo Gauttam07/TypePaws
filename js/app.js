@@ -24,6 +24,7 @@ class TypePawsApp {
     this.elapsedSeconds = 0;
     this.targetDuration = 0; // 0 = passage completion, or 15, 30, 60 seconds
     this.wpmHistory = [];
+    this.lessonsDisplayMode = 'grid'; // 'grid' | 'list'
 
     this.init();
   }
@@ -61,6 +62,28 @@ class TypePawsApp {
         if (view) this.switchView(view);
       });
     });
+
+    // Lessons Grid vs List mode toggle
+    const btnGrid = document.getElementById('toggle-view-grid');
+    const btnList = document.getElementById('toggle-view-list');
+    if (btnGrid && btnList) {
+      btnGrid.addEventListener('click', () => {
+        this.lessonsDisplayMode = 'grid';
+        btnGrid.classList.add('btn-primary');
+        btnGrid.classList.remove('btn-outline');
+        btnList.classList.add('btn-outline');
+        btnList.classList.remove('btn-primary');
+        this.renderLessonsView();
+      });
+      btnList.addEventListener('click', () => {
+        this.lessonsDisplayMode = 'list';
+        btnList.classList.add('btn-primary');
+        btnList.classList.remove('btn-outline');
+        btnGrid.classList.add('btn-outline');
+        btnGrid.classList.remove('btn-primary');
+        this.renderLessonsView();
+      });
+    }
 
     // Auth trigger button
     const authNavBtn = document.getElementById('auth-nav-btn');
@@ -431,12 +454,11 @@ class TypePawsApp {
     this.currentLevelKey = levelKey;
     window.storageManager.setCurrentLevel(levelKey);
     this.updateHeaderLevelBadge();
+    this.renderDashboard();
     
-    // If on lessons view, reload
+    // If on lessons view, also reload lessons
     if (this.currentView === 'lessons') {
       this.renderLessonsView();
-    } else {
-      this.renderDashboard();
     }
   }
 
@@ -460,6 +482,7 @@ class TypePawsApp {
     const heroSubtitle = document.getElementById('dash-hero-subtitle');
     const heroProgressText = document.getElementById('dash-hero-progress-text');
     const heroProgressBar = document.getElementById('dash-hero-progress-bar');
+    const heroTargetWpm = document.getElementById('dash-hero-target-wpm');
     const resumeBtn = document.getElementById('dash-resume-btn');
 
     const nextLessonNum = levelStats.nextLessonNum;
@@ -470,8 +493,20 @@ class TypePawsApp {
     if (heroProgressText) heroProgressText.innerText = `${levelStats.completedCount} of 100 Practice Lessons Completed (${levelStats.percent}%)`;
     if (heroProgressBar) heroProgressBar.style.width = `${levelStats.percent}%`;
 
+    // Dynamic Target WPM on Home Page
+    if (heroTargetWpm) {
+      if (this.currentLevelKey === 'beginner') {
+        heroTargetWpm.innerText = "Target: 25 - 35 WPM";
+      } else if (this.currentLevelKey === 'intermediate') {
+        heroTargetWpm.innerText = "Target: 35 - 60 WPM";
+      } else {
+        heroTargetWpm.innerText = "Target: 60 - 100+ WPM";
+      }
+    }
+
     if (resumeBtn) {
-      resumeBtn.innerHTML = `<span>▶</span> Resume Lesson #${nextLesson.number}: ${nextLesson.title}`;
+      const actionVerb = levelStats.completedCount === 0 ? "Start" : "Resume";
+      resumeBtn.innerHTML = `<span>▶</span> ${actionVerb} Lesson #${nextLesson.number}: ${nextLesson.title}`;
       resumeBtn.onclick = () => {
         this.startLesson(nextLesson);
       };
@@ -559,36 +594,64 @@ class TypePawsApp {
     // Grid of Lessons
     const grid = document.getElementById('lessons-grid');
     if (grid) {
-      grid.innerHTML = filtered.map(lesson => {
-        const progress = completedMap[lesson.id];
-        const isDone = !!progress;
-        const starsHtml = isDone
-          ? '★'.repeat(progress.stars) + '☆'.repeat(3 - progress.stars)
-          : '☆☆☆';
+      const levelStats = window.storageManager.getLevelStats(this.currentLevelKey);
 
-        return `
-          <div class="lesson-card ${isDone ? 'completed' : ''}" data-lesson-id="${lesson.id}">
-            <div class="lesson-card-top">
-              <span class="lesson-number">#${lesson.number}</span>
-              <span class="lesson-diff-tag diff-${lesson.difficulty.toLowerCase()}">${lesson.difficulty}</span>
-            </div>
-            <h4 class="lesson-title">${lesson.title}</h4>
-            <div class="lesson-focus">Focus: <code>${lesson.focus}</code></div>
-            <p class="lesson-snippet">"${lesson.text.substring(0, 48)}..."</p>
-            <div class="lesson-card-footer">
-              <div class="lesson-stars ${isDone ? 'active' : ''}">${starsHtml}</div>
-              <div class="lesson-best-wpm">${isDone ? `${progress.bestWpm} WPM` : `Target: ${lesson.targetWpm} WPM`}</div>
-              <button class="btn btn-sm ${isDone ? 'btn-outline' : 'btn-primary'} btn-start-lesson">
-                ${isDone ? 'Practice Again' : 'Start'}
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('');
+      if (this.lessonsDisplayMode === 'grid') {
+        grid.className = 'lessons-tiles-matrix';
+        grid.innerHTML = filtered.map(lesson => {
+          const progress = completedMap[lesson.id];
+          const isDone = !!progress;
+          const isNext = lesson.number === levelStats.nextLessonNum && !isDone;
+          const starsHtml = isDone
+            ? '★'.repeat(progress.stars) + '☆'.repeat(3 - progress.stars)
+            : '☆☆☆';
 
-      grid.querySelectorAll('.lesson-card').forEach(card => {
-        card.addEventListener('click', (e) => {
-          const id = card.dataset.lessonId;
+          return `
+            <div class="lesson-tile ${isDone ? 'completed' : ''} ${isNext ? 'current-active' : ''}" data-lesson-id="${lesson.id}" title="${lesson.title}: ${lesson.description}">
+              <div class="tile-top-row">
+                <span class="tile-num-badge">#${lesson.number < 10 ? '0' + lesson.number : lesson.number}</span>
+                ${isDone ? '<span class="tile-check-icon">✓</span>' : (isNext ? '<span style="font-size: 0.68rem; font-weight: 800; color: var(--color-primary-dark);">ACTIVE</span>' : '')}
+              </div>
+              <div class="tile-title">${lesson.title}</div>
+              <div class="tile-focus-chip">${lesson.focus}</div>
+              <div class="tile-stars">${starsHtml}</div>
+              <div class="tile-wpm">${isDone ? `${progress.bestWpm} WPM` : `Target ${lesson.targetWpm}`}</div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        grid.className = 'lessons-cards-grid';
+        grid.innerHTML = filtered.map(lesson => {
+          const progress = completedMap[lesson.id];
+          const isDone = !!progress;
+          const starsHtml = isDone
+            ? '★'.repeat(progress.stars) + '☆'.repeat(3 - progress.stars)
+            : '☆☆☆';
+
+          return `
+            <div class="lesson-card ${isDone ? 'completed' : ''}" data-lesson-id="${lesson.id}">
+              <div class="lesson-card-top">
+                <span class="lesson-number">#${lesson.number}</span>
+                <span class="lesson-diff-tag diff-${lesson.difficulty.toLowerCase()}">${lesson.difficulty}</span>
+              </div>
+              <h4 class="lesson-title">${lesson.title}</h4>
+              <div class="lesson-focus">Focus: <code>${lesson.focus}</code></div>
+              <p class="lesson-snippet">"${lesson.text.substring(0, 48)}..."</p>
+              <div class="lesson-card-footer">
+                <div class="lesson-stars ${isDone ? 'active' : ''}">${starsHtml}</div>
+                <div class="lesson-best-wpm">${isDone ? `${progress.bestWpm} WPM` : `Target: ${lesson.targetWpm} WPM`}</div>
+                <button class="btn btn-sm ${isDone ? 'btn-outline' : 'btn-primary'} btn-start-lesson">
+                  ${isDone ? 'Practice Again' : 'Start'}
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      grid.querySelectorAll('.lesson-tile, .lesson-card').forEach(el => {
+        el.addEventListener('click', () => {
+          const id = el.dataset.lessonId;
           const lessonObj = levelInfo.lessons.find(l => l.id === id);
           if (lessonObj) {
             this.startLesson(lessonObj);
@@ -671,13 +734,27 @@ class TypePawsApp {
     if (!container) return;
 
     let html = "";
-    for (let i = 0; i < this.lessonText.length; i++) {
-      const char = this.lessonText[i];
-      const displayChar = char === ' ' ? ' ' : char;
-      const spaceClass = char === ' ' ? 'char-space' : '';
-      const currentClass = i === 0 ? 'current' : '';
-      html += `<span class="char-span ${spaceClass} ${currentClass}" data-index="${i}">${displayChar}</span>`;
-    }
+    let globalIdx = 0;
+    const words = this.lessonText.split(' ');
+
+    words.forEach((w, wIdx) => {
+      html += `<span class="word-box" data-word-idx="${wIdx}">`;
+      for (let i = 0; i < w.length; i++) {
+        const char = w[i];
+        const isCurrent = globalIdx === 0 ? 'current' : '';
+        html += `<span class="char-span ${isCurrent}" data-index="${globalIdx}">${char}</span>`;
+        globalIdx++;
+      }
+      html += `</span>`;
+
+      // Space between words
+      if (wIdx < words.length - 1) {
+        const isCurrent = globalIdx === 0 ? 'current' : '';
+        html += `<span class="char-span char-space ${isCurrent}" data-index="${globalIdx}"> </span>`;
+        globalIdx++;
+      }
+    });
+
     container.innerHTML = html;
 
     // Caret element
@@ -701,11 +778,22 @@ class TypePawsApp {
       const left = charRect.left - parentRect.left;
       const top = charRect.top - parentRect.top;
       caret.style.transform = `translate(${left}px, ${top}px)`;
-      caret.style.height = `${charRect.height}px`;
+      caret.style.height = `${charRect.height || 28}px`;
       caret.style.display = 'block';
     } else {
-      // End of text
-      caret.style.display = 'none';
+      // Caret at end of text
+      const lastChar = container.querySelector(`.char-span[data-index="${this.lessonText.length - 1}"]`);
+      if (lastChar) {
+        const parentRect = container.getBoundingClientRect();
+        const charRect = lastChar.getBoundingClientRect();
+        const left = charRect.right - parentRect.left;
+        const top = charRect.top - parentRect.top;
+        caret.style.transform = `translate(${left}px, ${top}px)`;
+        caret.style.height = `${charRect.height || 28}px`;
+        caret.style.display = 'block';
+      } else {
+        caret.style.display = 'none';
+      }
     }
   }
 
@@ -874,10 +962,11 @@ class TypePawsApp {
   }
 
   calculateCurrentWpm() {
-    if (this.elapsedSeconds === 0) return 0;
+    if (!this.startTime) return 0;
+    const elapsedMinutes = (Date.now() - this.startTime) / 60000;
+    if (elapsedMinutes < 0.02) return 0; // sub-second stabilization
     const words = this.correctChars / 5;
-    const minutes = this.elapsedSeconds / 60;
-    return Math.round(words / minutes);
+    return Math.max(0, Math.round(words / elapsedMinutes));
   }
 
   recalculateStats() {
