@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harsh Gauttam — Freelance Frontend Developer & Software Developer</title>
+  <meta name="description" content="Professional portfolio of Harsh Gauttam — Freelance Frontend Developer & Software Developer specializing in frontend development, software engineering, and QA testing.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Enforce Predefault Dark Theme On Opening -->
+  <script>
+    try {
+      var theme = localStorage.getItem('hud_theme_mode') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (_) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  </script>
+</head>
+<body class="no-scrollbar">
+
+  <!-- =========================================================================
+       INITIAL SYSTEM LOADER
+       ========================================================================= -->
+  <div id="loader" aria-hidden="true">
+    <div class="loader-pill-track">
+      <div id="loader-bar" class="loader-pill-bar"></div>
+    </div>
+    <div id="loader-meta" class="loader-meta">INITIALIZING HUD SUBSYSTEMS...</div>
+  </div>
+
+  <!-- =========================================================================
+       WEBGL INTERACTIVE STAGE & RETRO GRID
+       ========================================================================= -->
+  <canvas id="webgl-canvas"></canvas>
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <!-- =========================================================================
+       FIXED TOP HUD HEADER
+       ========================================================================= -->
+  <header class="hud-frame-top" role="banner">
+    <a href="#home" class="hud-btn hud-brand" aria-label="Harsh Gauttam Home">
+      <span class="hud-brand-dot" aria-hidden="true"></span>
+      <span class="hud-brand-text">HARSH.GAUTTAM</span>
+    </a>
+
+    <nav class="hud-nav-group" role="navigation" aria-label="Main Navigation">
+      <a href="#about" class="hud-btn">About</a>
+      <a href="#education" class="hud-btn">Education</a>
+      <a href="#experience" class="hud-btn">Experience</a>
+      <a href="#skills" class="hud-btn">Skills</a>
+      <a href="#projects" class="hud-btn">Projects</a>
+      <a href="#contact" class="hud-btn">Contact</a>
+      <button type="button" id="theme-toggle" class="hud-btn" aria-label="Toggle visual theme">
+        <span>THEME[D]</span>
+      </button>
+      <button type="button" id="sound-toggle" class="hud-btn" aria-label="Toggle UI synthesizer sound" aria-pressed="true">
+        <span>SOUND[|]</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- =========================================================================
+       FIXED BOTTOM HUD STATUS BAR & TELEMETRY
+       ========================================================================= -->
+  <aside class="hud-frame-bottom" aria-label="System Telemetry">
+    <span id="hud-clock">GMT+5:30 IST 00:00:00</span>
+    <span id="hud-coords" class="hud-coordinates">0000 X 0000 Y</span>
+    <div class="hud-bottom-status-group">
+      <span class="hud-status">STATUS // OPTIMAL</span>
+      <span class="hud-eye-metric" title="Telemetry">
+        <svg class="hud-eye-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <span class="visitor-count-val">--</span>
+      </span>
+    </div>
+  </aside>
+
+  <!-- =========================================================================
+       PAGE CONTENT WRAPPER
+       ========================================================================= -->
+  <main class="content-wrapper">
+
+    <!-- =====================================================================
+         1. HOME SECTION
+         ===================================================================== -->
+    <section class="hero-section grid-12" id="home">
+      <div class="hero-meta-row">
+        <div class="hero-meta-col-1">
+          <div class="section-label">[ROLE & TITLE]</div>
+          <div class="hero-subhead">
+            Freelance Frontend Developer<br>&amp; Software Developer
+          </div>
+        </div>
+
+        <div class="hero-meta-col-2">
+          <div class="section-label">[CORE FOCUS]</div>
+          <p class="hero-bio-text">
+            Specializing in modern responsive frontend development, software engineering principles, and quality assurance testing.
+          </p>
+        </div>
+
+        <div class="hero-meta-col-3">
+          <div class="section-label">[INTRODUCTION]</div>
+          <p class="hero-bio-text">
+            Hello, I'm <strong>Harsh Gauttam</strong>. I develop accessible, high-performance web interfaces and robust software workflows with a focus on code quality, test validation, and responsive digital experiences.
+          </p>
+          <div class="hero-cta-btns">
+            <a href="#projects" class="hud-btn hud-btn-primary">
+              <span>View Projects ↗</span>
+            </a>
+            <a href="#contact" class="hud-btn">
+              <span>Contact Me</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Giant Retro Display Headline -->
+      <h1 class="hero-giant-headline">
+        <span>HARSH GAUTTAM</span>
+        <span><span class="accent-glow-text">FRONTEND</span> DEV</span>
+        <span>&amp; SOFTWARE DEVELOPER</span>
+      </h1>
+    </section>
+
+    <!-- =====================================================================
+         2. ABOUT SECTION
+         ===================================================================== -->
+    <section class="section-divider grid-12" id="about">
+      <div class="section-header">
+        <span class="section-label">02 // PROFILE &amp; SPECIALIZATION</span>
+        <h2 class="section-heading">About Me</h2>
+      </div>
+
+      <div style="grid-column: span 12; max-width: 960px;">
+        <p style="font-size: clamp(1.2rem, 2.2vw, 1.65rem); line-height: 1.45; color: var(--label-1); margin-bottom: 2rem;">
+          I am a Frontend Developer and Software Developer combining technical engineering rigor with responsive interface design and quality assurance methodologies.
+        </p>
+      </div>
+
+      <div class="about-pillars">
+        <div class="pillar-card">
+          <div class="pillar-num">[01]</div>
+          <h3 class="pillar-title">Frontend Development</h3>
+          <p class="pillar-desc">
+            Building accessible, responsive web interfaces with modern semantic HTML5, CSS3, JavaScript, and Bootstrap, with structured exposure to React.js and component-based UI engineering.
+          </p>
+        </div>
+
+        <div class="pillar-card">
+          <div class="pillar-num">[02]</div>
+          <h3 class="pillar-title">Software Engineering</h3>
+          <p class="pillar-desc">
+            Grounding solutions in Object-Oriented Programming (OOP) and Data Structures &amp; Algorithms (DSA) across C++ and Python, with collaborative version control via Git and GitHub.
+          </p>
+        </div>
+
+        <div class="pillar-card">
+          <div class="pillar-num">[03]</div>
+          <h3 class="pillar-title">QA &amp; Testing</h3>
+          <p class="pillar-desc">
+            Applying methodical testing practices: functional, regression, smoke, and sanity test design, defect logging, and API validation with Postman, Selenium, and Robot Framework.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         3. EDUCATION SECTION
+         ===================================================================== -->
+    <section class="section-divider grid-12" id="education">
+      <div class="section-header">
+        <span class="section-label">03 // ACADEMIC FOUNDATION</span>
+        <h2 class="section-heading">Education</h2>
+      </div>
+
+      <div class="education-card">
+        <div class="edu-left">
+          <div class="hud-badge" style="margin-bottom: 1rem;">ACADEMIC QUALIFICATION</div>
+          <h3 class="edu-degree">Bachelor of Technology in Information Technology</h3>
+          <p class="edu-college">Jaipur Engineering College and Research Center</p>
+          <span class="edu-period">2022 – 2026</span>
+        </div>
+        <div class="edu-right">
+          <div class="edu-cgpa-box">
+            <span class="edu-cgpa-val">8.59</span>
+            <span class="edu-cgpa-lbl">CUMULATIVE GPA</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         4. EXPERIENCE SECTION
+         ===================================================================== -->
+    <section class="section-divider grid-12" id="experience">
+      <div class="section-header">
+        <span class="section-label">04 // PROFESSIONAL RECORD</span>
+        <h2 class="section-heading">Experience</h2>
+      </div>
+
+      <div class="exp-timeline">
+        <!-- Role 1: Freelance Frontend Developer -->
+        <article class="exp-card interactive-node" data-node-id="exp-freelance" role="button" tabindex="0" aria-label="View Freelance Frontend Developer details">
+          <div class="exp-header">
+            <div>
+              <h3 class="exp-role-title">
+                Freelance Frontend Developer
+                <span class="hud-badge">INDEPENDENT WORK</span>
+              </h3>
+              <p class="exp-company">Self-Employed / Independent Frontend Services</p>
+            </div>
+            <span class="exp-dates">Ongoing</span>
+          </div>
+          <p class="exp-desc">
+            Delivering responsive frontend web development services; structuring clean, mobile-friendly interfaces with semantic HTML, modern CSS, and JavaScript; implementing cross-browser design standards and component-driven layouts.
+          </p>
+          <span class="node-click-hint">Click card for 3D cloud breakdown ↗</span>
+        </article>
+
+        <!-- Role 2: Bikaji Foods International Ltd -->
+        <article class="exp-card interactive-node" data-node-id="exp-bikaji" role="button" tabindex="0" aria-label="View Bikaji Foods International Ltd details">
+          <div class="exp-header">
+            <div>
+              <h3 class="exp-role-title">Forward Deployed Engineer</h3>
+              <p class="exp-company">Bikaji Foods International Ltd</p>
+            </div>
+            <span class="exp-dates">July 2024 – August 2024</span>
+          </div>
+          <p class="exp-desc">
+            Automated Microsoft Dynamics 365 business workflows; conducted workflow validation and critical system checks; collaborated closely with cross-functional teams to resolve operational and process issues.
+          </p>
+          <div class="exp-metrics-tag">
+            ✓ Source resume reports: <strong>25% improved efficiency</strong> and <strong>18% fewer manual-intervention errors</strong>.
+          </div>
+          <span class="node-click-hint">Click card for 3D cloud breakdown ↗</span>
+        </article>
+
+        <!-- Role 3: Capgemini -->
+        <article class="exp-card interactive-node" data-node-id="exp-capgemini" role="button" tabindex="0" aria-label="View Capgemini Trainee details">
+          <div class="exp-header">
+            <div>
+              <h3 class="exp-role-title">
+                Software Engineering Analyst Trainee
+                <span class="hud-badge hud-badge-muted">TRAINEE ROLE</span>
+              </h3>
+              <p class="exp-company">Capgemini</p>
+            </div>
+            <span class="exp-dates">January 2026 – June 2026</span>
+          </div>
+          <p class="exp-desc">
+            Completed structured software engineering training; constructed responsive web pages utilizing HTML, CSS, Bootstrap, and JavaScript; engaged in team version control via Git and GitHub; executed systematic code debugging; gained exposure to React.js and component-based UI development.
+          </p>
+          <span class="node-click-hint">Click card for 3D cloud breakdown ↗</span>
+        </article>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         5. SKILLS SECTION
+         ===================================================================== -->
+    <section class="section-divider grid-12" id="skills">
+      <div class="section-header">
+        <span class="section-label">05 // TECHNICAL CAPABILITIES</span>
+        <h2 class="section-heading">Skills</h2>
+      </div>
+
+      <div class="skills-grid">
+        <!-- Programming Languages -->
+        <div class="skill-category-card">
+          <h3 class="skill-cat-title">[PROGRAMMING LANGUAGES]</h3>
+          <div class="skill-item-row">
+            <span class="skill-name">Python</span>
+            <span class="skill-level" style="color:var(--accent);">Experienced</span>
+          </div>
+          <div class="skill-item-row">
+            <span class="skill-name">C++</span>
+            <span class="skill-level">DSA &amp; OOP</span>
+          </div>
+          <div class="skill-item-row">
+            <span class="skill-name">Java</span>
+            <span class="skill-level">Beginner</span>
+          </div>
+        </div>
+
+        <!-- Frontend -->
+        <div class="skill-category-card">
+          <h3 class="skill-cat-title">[FRONTEND DEVELOPMENT]</h3>
+          <div class="skill-item-row">
+            <span class="skill-name">HTML5 &amp; CSS3</span>
+            <span class="skill-level">Semantic &amp; Responsive</span>
+          </div>
+          <div class="skill-item-row">
+            <span class="skill-name">JavaScript</span>
+            <span class="skill-level">DOM &amp; ES6+</span>
+          </div>
+          <div class="skill-item-row">
+            <span class="skill-name">Vanilla JS</span>
+            <span class="skill-level" style="color:var(--accent);">Core DOM &amp; Logic</span>
+          </div>
+          <div class="skill-item-row">
+            <span class="skill-name">Bootstrap</span>
+            <span class="skill-level">Grid &amp; Components</span>
+          </div>
+          <div class="skill-item-row">
+            <span class="skill-name">React.js</span>
+            <span class="skill-level" style="color:var(--accent);">Exposure</span>
+          </div>
+        </div>
+
+        <!-- QA & Testing -->
+        <div class="skill-category-card">
+          <h3 class="skill-cat-title">[QA &amp; TESTING]</h3>
+          <div class="skill-tags-cloud">
+            <span class="skill-tag">Functional Testing</span>
+            <span class="skill-tag">Regression Testing</span>
+            <span class="skill-tag">Smoke Testing</span>
+            <span class="skill-tag">Sanity Testing</span>
+            <span class="skill-tag">Test Case Design</span>
+            <span class="skill-tag">Defect Reporting</span>
+            <span class="skill-tag">Postman (API Testing)</span>
+            <span class="skill-tag">Selenium</span>
+            <span class="skill-tag">Robot Framework</span>
+            <span class="skill-tag">Jira</span>
+            <span class="skill-tag">Jenkins</span>
+          </div>
+        </div>
+
+        <!-- Data & Tools -->
+        <div class="skill-category-card">
+          <h3 class="skill-cat-title">[DATA, BACKEND &amp; TOOLS]</h3>
+          <div class="skill-tags-cloud">
+            <span class="skill-tag" style="border-color:var(--accent); color:var(--accent);">Node.js</span>
+            <span class="skill-tag">SQL</span>
+            <span class="skill-tag">MongoDB</span>
+            <span class="skill-tag">REST APIs</span>
+            <span class="skill-tag">Git / GitHub</span>
+            <span class="skill-tag">AWS S3</span>
+            <span class="skill-tag">AWS EC2</span>
+            <span class="skill-tag">Debugging</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         HUYML.CO INTERACTIVE SHOWCASE REEL RIBBON (Positioned above Featured Projects)
+         ========================================================================= -->
+    <div class="huyml-reel-ribbon" aria-label="Showcase Reel Banner">
+      <div class="reel-meta-bar">
+        <span>● HUYML-INSPIRED INTERACTIVE TELEMETRY</span>
+        <span>WORKING GLOBALLY // JAIPUR, IN</span>
+        <span>‘26 SHOWREEL &amp; DEMOS</span>
+      </div>
+
+      <div class="marquee-track">
+        <div class="marquee-content">
+          <span>HARSH GAUTTAM</span>
+          <span class="marquee-dot">●</span>
+          <span>FREELANCE FRONTEND DEVELOPER</span>
+          <span class="marquee-dot">●</span>
+          <span>RESPONSIVE DIGITAL CRAFT</span>
+          <span class="marquee-dot">●</span>
+          <span>TESTING &amp; VALIDATION</span>
+          <span class="marquee-dot">●</span>
+          <span>SYSTEMS &amp; INTERACTION</span>
+          <span class="marquee-dot">●</span>
+        </div>
+        <div class="marquee-content" aria-hidden="true">
+          <span>HARSH GAUTTAM</span>
+          <span class="marquee-dot">●</span>
+          <span>FREELANCE FRONTEND DEVELOPER</span>
+          <span class="marquee-dot">●</span>
+          <span>RESPONSIVE DIGITAL CRAFT</span>
+          <span class="marquee-dot">●</span>
+          <span>TESTING &amp; VALIDATION</span>
+          <span class="marquee-dot">●</span>
+          <span>SYSTEMS &amp; INTERACTION</span>
+          <span class="marquee-dot">●</span>
+        </div>
+      </div>
+
+      <div class="reel-action-bar">
+        <button type="button" class="hud-btn hud-btn-primary" data-preview-url="https://gauttam07.github.io/TypePaws/" data-preview-title="TypePaws™ Live Reel Preview">
+          <span>▶ LAUNCH FEATURED LIVE REEL PREVIEW</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         6. PROJECTS SECTION
+         ===================================================================== -->
+    <section class="section-divider grid-12" id="projects">
+      <div class="section-header">
+        <span class="section-label">06 // VERIFIED PROJECT REPERTOIRE</span>
+        <h2 class="section-heading">Featured Projects</h2>
+      </div>
+
+      <div class="projects-container">
+
+        <!-- Project 1: TypePaws -->
+        <article class="project-tilt-card interactive-node" data-node-id="proj-typepaws" role="button" tabindex="0" aria-label="View TypePaws details">
+          <div class="project-card-top">
+            <div>
+              <span class="hud-badge" style="margin-bottom: 0.5rem;">FLAGSHIP // FRONTEND</span>
+              <h3 class="project-title">TypePaws™</h3>
+            </div>
+            <span class="huyml-index-num">/01</span>
+          </div>
+          <p class="project-summary">
+            Modern typing-practice website with an engaging visual aesthetic, real-time keystroke telemetry, and comprehensive learning paths designed for progressive touch-typing skill building.
+          </p>
+          <div class="project-tech-list">
+            <span class="hud-badge hud-badge-muted">HTML5</span>
+            <span class="hud-badge hud-badge-muted">CSS3</span>
+            <span class="hud-badge hud-badge-muted">JavaScript</span>
+            <span class="hud-badge hud-badge-muted">Vanilla JS</span>
+          </div>
+          <div class="project-links-row">
+            <button type="button" class="hud-btn hud-btn-primary" data-preview-url="https://gauttam07.github.io/TypePaws/" data-preview-title="TypePaws™ Live Preview">
+              <span>Interactive Preview ↗</span>
+            </button>
+            <a href="https://gauttam07.github.io/TypePaws/" target="_blank" rel="noopener noreferrer" class="hud-btn">
+              <span>Direct Link ↗</span>
+            </a>
+            <a href="https://github.com/Gauttam07/TypePaws" target="_blank" rel="noopener noreferrer" class="hud-btn">
+              <span>GitHub Repo ↗</span>
+            </a>
+          </div>
+          <span class="node-click-hint">Click card for 3D cloud breakdown ↗</span>
+        </article>
+
+        <!-- Project 2: Harmonic Musical Web Application -->
+        <article class="project-tilt-card interactive-node" data-node-id="proj-harmonic" role="button" tabindex="0" aria-label="View Harmonic Musical Web Application details">
+          <div class="project-card-top">
+            <div>
+              <span class="hud-badge" style="margin-bottom: 0.5rem;">FRONTEND APPLICATION</span>
+              <h3 class="project-title">Harmonic Musical Web Application</h3>
+            </div>
+            <span class="huyml-index-num">/02</span>
+          </div>
+          <p class="project-summary">
+            Responsive web-based music player featuring interactive audio playback controls, playlist management, and persistent client-side state using browser local storage.
+          </p>
+          <div class="exp-metrics-tag" style="margin-top:0.75rem;">
+            💡 <strong>AI feature concept:</strong> mood-based playlist suggestions using a listener’s selected mood and music preferences (planned enhancement / concept).
+          </div>
+          <div class="project-tech-list">
+            <span class="hud-badge hud-badge-muted">HTML</span>
+            <span class="hud-badge hud-badge-muted">CSS</span>
+            <span class="hud-badge hud-badge-muted">JavaScript</span>
+            <span class="hud-badge hud-badge-muted">Vanilla JS</span>
+            <span class="hud-badge hud-badge-muted">Local Storage</span>
+          </div>
+          <div class="project-links-row">
+            <a href="https://github.com/Gauttam07" target="_blank" rel="noopener noreferrer" class="hud-btn">
+              <span>View on GitHub ↗</span>
+            </a>
+          </div>
+          <span class="node-click-hint">Click card for 3D cloud breakdown ↗</span>
+        </article>
+
+        <!-- Project 3: BanterBox Real-Time Chat Application -->
+        <article class="project-tilt-card interactive-node" data-node-id="proj-banterbox" role="button" tabindex="0" aria-label="View BanterBox details">
+          <div class="project-card-top">
+            <div>
+              <span class="hud-badge" style="margin-bottom: 0.5rem;">FULL-STACK SYSTEM</span>
+              <h3 class="project-title">BanterBox Real-Time Chat Application</h3>
+            </div>
+            <span class="huyml-index-num">/03</span>
+          </div>
+          <p class="project-summary">
+            Real-time messaging platform built with Node.js and Express.js, featuring REST APIs, secure token-based JWT authentication, user onboarding flows, profile customization, and MongoDB database storage.
+          </p>
+          <div class="project-tech-list">
+            <span class="hud-badge hud-badge-muted">Node.js</span>
+            <span class="hud-badge hud-badge-muted">Express.js</span>
+            <span class="hud-badge hud-badge-muted">MongoDB</span>
+            <span class="hud-badge hud-badge-muted">JWT</span>
+          </div>
+          <div class="project-links-row">
+            <a href="https://github.com/Gauttam07" target="_blank" rel="noopener noreferrer" class="hud-btn">
+              <span>View on GitHub ↗</span>
+            </a>
+          </div>
+          <span class="node-click-hint">Click card for 3D cloud breakdown ↗</span>
+        </article>
+
+        <!-- Project 4: AI Workflow Testing and Validation System -->
+        <article class="project-tilt-card interactive-node" data-node-id="proj-aiworkflow" role="button" tabindex="0" aria-label="View AI Workflow Testing details">
+          <div class="project-card-top">
+            <div>
+              <span class="hud-badge" style="margin-bottom: 0.5rem;">QA AUTOMATION</span>
+              <h3 class="project-title">AI Workflow Testing and Validation System</h3>
+            </div>
+            <span class="huyml-index-num">/04</span>
+          </div>
+          <p class="project-summary">
+            End-to-end workflow verification system executing functional and regression test checks, REST API validation, defect documentation, and fix verification suites.
+          </p>
+          <div class="project-tech-list">
+            <span class="hud-badge hud-badge-muted">Python</span>
+            <span class="hud-badge hud-badge-muted">Selenium</span>
+            <span class="hud-badge hud-badge-muted">Postman</span>
+            <span class="hud-badge hud-badge-muted">REST APIs</span>
+          </div>
+          <div class="project-links-row">
+            <a href="https://github.com/Gauttam07" target="_blank" rel="noopener noreferrer" class="hud-btn">
+              <span>View on GitHub ↗</span>
+            </a>
+          </div>
+          <span class="node-click-hint">Click card for 3D cloud breakdown ↗</span>
+        </article>
+
+        <!-- Project 5: Stock Market Real-Time Data Pipeline -->
+        <article class="project-tilt-card interactive-node" data-node-id="proj-datapipeline" role="button" tabindex="0" aria-label="View Stock Market Data Pipeline details">
+          <div class="project-card-top">
+            <div>
+              <span class="hud-badge" style="margin-bottom: 0.5rem;">DATA PIPELINE</span>
+              <h3 class="project-title">Stock Market Real-Time Data Pipeline</h3>
+            </div>
+            <span class="huyml-index-num">/05</span>
+          </div>
+          <p class="project-summary">
+            Cloud-based data ingestion and validation pipeline processing high-frequency time-series market datasets, enforcing schema compliance, automated data cleaning routines, and scalable storage in AWS S3 and EC2.
+          </p>
+          <div class="project-tech-list">
+            <span class="hud-badge hud-badge-muted">Python</span>
+            <span class="hud-badge hud-badge-muted">SQL</span>
+            <span class="hud-badge hud-badge-muted">AWS S3</span>
+            <span class="hud-badge hud-badge-muted">AWS EC2</span>
+            <span class="hud-badge hud-badge-muted">REST APIs</span>
+          </div>
+          <div class="project-links-row">
+            <a href="https://github.com/Gauttam07" target="_blank" rel="noopener noreferrer" class="hud-btn">
+              <span>View on GitHub ↗</span>
+            </a>
+          </div>
+          <span class="node-click-hint">Click card for 3D cloud breakdown ↗</span>
+        </article>
+
+        <!-- Project 6: Service Desk SLA & Data Quality Dashboard -->
+        <article class="project-tilt-card interactive-node" data-node-id="proj-servicedesk" role="button" tabindex="0" aria-label="View Service Desk SLA Dashboard details">
+          <div class="project-card-top">
+            <div>
+              <span class="hud-badge hud-badge-muted" style="margin-bottom: 0.5rem;">DATA ANALYSIS // SYNTHETIC DATASET</span>
+              <h3 class="project-title">Service Desk SLA and Data Quality Dashboard</h3>
+            </div>
+            <span class="huyml-index-num">/06</span>
+          </div>
+          <p class="project-summary">
+            Data quality dashboard analyzing service level agreement compliance and ticket lifecycle metrics across 250 synthetic sample ticket records.
+          </p>
+          <div class="project-tech-list">
+            <span class="hud-badge hud-badge-muted">Microsoft Excel</span>
+            <span class="hud-badge hud-badge-muted">250 Synthetic Ticket Records</span>
+          </div>
+          <div class="project-links-row">
+            <a href="https://github.com/Gauttam07" target="_blank" rel="noopener noreferrer" class="hud-btn">
+              <span>View on GitHub ↗</span>
+            </a>
+          </div>
+          <span class="node-click-hint">Click card for 3D cloud breakdown ↗</span>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         7. CONTACT SECTION & FOOTER
+         ===================================================================== -->
+    <footer class="contact-section grid-12" id="contact" role="contentinfo">
+      <div class="section-header">
+        <span class="section-label">07 // DIRECT COMMUNICATION</span>
+        <h2 class="section-heading">Get In Touch</h2>
+      </div>
+
+      <div style="grid-column: span 12; max-width: 800px;">
+        <p style="font-size: clamp(1.2rem, 2.5vw, 1.75rem); color: var(--label-1); line-height: 1.4;">
+          Available for freelance frontend projects and technical software roles. Let's discuss your requirements.
+        </p>
+      </div>
+
+      <div class="contact-channels-grid">
+        <!-- Email -->
+        <div class="contact-channel-card">
+          <span class="contact-channel-label">EMAIL ADDRESS</span>
+          <a href="mailto:harshgauttam4002@gmail.com" class="contact-channel-val" data-copy="harshgauttam4002@gmail.com" title="Click to copy email">
+            harshgauttam4002@gmail.com
+          </a>
+          <span class="contact-channel-hint">Click to copy or send email ↗</span>
+        </div>
+
+        <!-- Phone -->
+        <div class="contact-channel-card">
+          <span class="contact-channel-label">PHONE CONTACT</span>
+          <span class="contact-channel-val">Available upon request</span>
+          <span class="contact-channel-hint">Direct communication via email</span>
+        </div>
+
+        <!-- LinkedIn -->
+        <div class="contact-channel-card">
+          <span class="contact-channel-label">LINKEDIN</span>
+          <a href="https://www.linkedin.com/in/harsh-gauttam" target="_blank" rel="noopener noreferrer" class="contact-channel-val">
+            linkedin.com/in/harsh-gauttam ↗
+          </a>
+          <span class="contact-channel-hint">Professional networking ↗</span>
+        </div>
+
+        <!-- GitHub -->
+        <div class="contact-channel-card">
+          <span class="contact-channel-label">GITHUB</span>
+          <a href="https://github.com/Gauttam07" target="_blank" rel="noopener noreferrer" class="contact-channel-val">
+            github.com/Gauttam07 ↗
+          </a>
+          <span class="contact-channel-hint">Open source repositories ↗</span>
+        </div>
+      </div>
+
+      <div class="footer-bottom-info">
+        <div>HARSH GAUTTAM © 2026 // ALL RIGHTS RESERVED</div>
+        <div class="footer-bottom-meta">
+          <span>DESIGN: RETRO-FUTURIST HUD // BUILT WITH ZERO DEPENDENCIES</span>
+          <span class="hud-eye-metric" title="Telemetry">
+            <svg class="hud-eye-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span class="visitor-count-val">--</span>
+          </span>
+        </div>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- =========================================================================
+       LIVE INTERACTIVE PREVIEW MODAL (Embedded HUD iframe)
+       ========================================================================= -->
+  <div id="live-preview-modal" class="live-preview-modal" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+    <div class="live-preview-dialog">
+      <div class="live-preview-header">
+        <span id="preview-title" class="live-preview-title">
+          <span class="hud-brand-dot"></span>
+          LIVE PREVIEW CONSOLE
+        </span>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <a id="preview-external" href="#" target="_blank" rel="noopener noreferrer" class="hud-btn" style="color:var(--accent);">
+            <span>Open in New Tab ↗</span>
+          </a>
+          <button type="button" id="preview-close" class="hud-btn" aria-label="Close modal">
+            <span>CLOSE [✕]</span>
+          </button>
+        </div>
+      </div>
+      <iframe id="preview-iframe" class="live-preview-iframe" title="Interactive Project Preview" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       FLOATING CLOUD-SHAPED 3D-STYLE DETAIL MODAL
+       ========================================================================= -->
+  <div id="cloud-detail-modal" class="cloud-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="cloud-modal-title">
+    <div class="cloud-modal-dialog">
+      <button type="button" id="cloud-modal-close" class="hud-btn cloud-modal-close" aria-label="Close details">
+        <span>CLOSE [✕]</span>
+      </button>
+
+      <div class="cloud-modal-header">
+        <div id="cloud-modal-badge" class="hud-badge cloud-modal-badge">DETAILS</div>
+        <h3 id="cloud-modal-title" class="cloud-modal-title">Title</h3>
+        <p id="cloud-modal-subtitle" class="cloud-modal-subtitle">Subtitle</p>
+      </div>
+
+      <!-- What it does -->
+      <div class="cloud-detail-block">
+        <div class="cloud-block-label">
+          <span>●</span>
+          <span>What It Does</span>
+        </div>
+        <p id="cloud-what-it-does" class="cloud-block-text"></p>
+      </div>
+
+      <!-- What I built -->
+      <div class="cloud-detail-block">
+        <div class="cloud-block-label">
+          <span>●</span>
+          <span>What I Built</span>
+        </div>
+        <p id="cloud-what-i-built" class="cloud-block-text"></p>
+      </div>
+
+      <!-- Tools used -->
+      <div class="cloud-detail-block">
+        <div class="cloud-block-label">
+          <span>●</span>
+          <span>Tools Used</span>
+        </div>
+        <div id="cloud-tools-list" class="cloud-tools-grid"></div>
+      </div>
+
+      <!-- Notice container (for Trainee / Synthetic dataset / AI concept notice) -->
+      <div id="cloud-notice-container" class="cloud-notice-box" style="display:none;">
+        <span id="cloud-notice-text"></span>
+      </div>
+
+      <!-- Modal Action Buttons (Preview, GitHub, Close) -->
+      <div id="cloud-modal-actions" class="cloud-modal-actions"></div>
+    </div>
+  </div>
+
+  <!-- HUD CLIPBOARD TOAST -->
+  <div id="hud-toast" role="alert" aria-live="polite">COPIED TO CLIPBOARD</div>
+
+  <!-- Scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/webgl.js"></script>
+  <script src="js/hud.js"></script>
+</body>
+</html>
