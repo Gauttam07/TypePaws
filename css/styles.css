@@ -2119,6 +2119,17 @@ body.dark-theme .results-grade {
   background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(245, 158, 11, 0.08) 100%);
 }
 
+.lesson-tile.auth-required {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(245, 158, 11, 0.06) 100%);
+  cursor: pointer !important;
+}
+
+.lesson-tile.auth-required:hover {
+  border-color: #f59e0b !important;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25) !important;
+}
+
 .tile-lock-icon {
   font-size: 0.85rem;
   color: var(--text-muted);
@@ -2156,6 +2167,17 @@ body.dark-theme .tile-bench-chip {
 .lesson-card.locked:hover {
   transform: none;
   border-color: var(--color-error);
+}
+
+.lesson-card.auth-required {
+  opacity: 0.95;
+  border-left: 4px solid #f59e0b;
+  cursor: pointer !important;
+}
+
+.lesson-card.auth-required:hover {
+  border-color: #f59e0b;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.18);
 }
 
 .lesson-card.failed-bench {

@@ -413,6 +413,7 @@ const LESSONS_DATA = {
       LESSONS_DATA[lvl.key].lessons.push({
         id: `${lvl.prefix}_${num}`,
         number: num,
+        level: lvl.key,
         title: item.title,
         sectionId: section.id,
         sectionTitle: section.title,

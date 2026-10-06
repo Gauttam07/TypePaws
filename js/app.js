@@ -376,6 +376,11 @@ class TypePawsApp {
     }
   }
 
+  getPrefixForLevel(lvl) {
+    const k = lvl || this.currentLevelKey || 'beginner';
+    return k === 'beginner' ? 'b_' : (k === 'intermediate' ? 'i_' : 'a_');
+  }
+
   // --- VIEW SWITCHING ---
   switchView(viewName) {
     this.currentView = viewName;
@@ -402,9 +407,12 @@ class TypePawsApp {
     } else if (viewName === 'lessons') {
       this.renderLessonsView();
     } else if (viewName === 'practice') {
-      if (!this.currentLesson) {
-        // Resume where left off
-        const nextNum = window.storageManager.data.lastLesson[this.currentLevelKey] || 1;
+      const prefix = this.getPrefixForLevel(this.currentLevelKey);
+      const isMatching = this.currentLesson && this.currentLesson.id && this.currentLesson.id.startsWith(prefix);
+      if (!isMatching) {
+        // Resume where left off in this active level!
+        const stats = window.storageManager.getLevelStats(this.currentLevelKey);
+        const nextNum = stats.nextLessonNum || 1;
         this.loadLessonByNumber(this.currentLevelKey, nextNum);
       }
       setTimeout(() => {
@@ -506,7 +514,20 @@ class TypePawsApp {
     window.storageManager.setCurrentLevel(levelKey);
     this.updateHeaderLevelBadge();
     this.renderDashboard();
-    
+
+    // Determine the next unpassed lesson for this new level!
+    const stats = window.storageManager.getLevelStats(levelKey);
+    const targetLessonNum = stats.nextLessonNum || 1;
+    const levelInfo = window.LESSONS_DATA[levelKey];
+    const targetLesson = levelInfo.lessons.find(l => l.number === targetLessonNum) || levelInfo.lessons[0];
+
+    // If currently on practice view, reload practice arena with the new level's lesson immediately!
+    if (this.currentView === 'practice') {
+      this.startLesson(targetLesson);
+    } else {
+      this.currentLesson = targetLesson;
+    }
+
     // If on lessons view, also reload lessons
     if (this.currentView === 'lessons') {
       this.renderLessonsView();
@@ -556,11 +577,19 @@ class TypePawsApp {
     }
 
     if (resumeBtn) {
-      const actionVerb = levelStats.completedCount === 0 ? "Start" : "Resume";
-      resumeBtn.innerHTML = `<span>▶</span> ${actionVerb} Lesson #${nextLesson.number}: ${nextLesson.title}`;
-      resumeBtn.onclick = () => {
-        this.startLesson(nextLesson);
-      };
+      const isAuthReq = window.storageManager.isAuthRequiredForLesson(this.currentLevelKey, nextLessonNum);
+      if (isAuthReq) {
+        resumeBtn.innerHTML = `<span>🔐</span> Unlock Lesson #${nextLesson.number} (Sign In Required)`;
+        resumeBtn.onclick = () => {
+          this.openAuthModal('signup', true, true);
+        };
+      } else {
+        const actionVerb = levelStats.completedCount === 0 ? "Start" : "Resume";
+        resumeBtn.innerHTML = `<span>▶</span> ${actionVerb} Lesson #${nextLesson.number}: ${nextLesson.title}`;
+        resumeBtn.onclick = () => {
+          this.startLesson(nextLesson);
+        };
+      }
     }
 
     // Quick Stats Cards
@@ -651,6 +680,7 @@ class TypePawsApp {
         grid.className = 'lessons-tiles-matrix';
         grid.innerHTML = filtered.map(lesson => {
           const isUnlocked = window.storageManager.isLessonUnlocked(this.currentLevelKey, lesson.number);
+          const isAuthRequired = window.storageManager.isAuthRequiredForLesson(this.currentLevelKey, lesson.number);
           const benchmark = window.storageManager.getBenchmark(this.currentLevelKey, lesson.number);
           const progress = completedMap[lesson.id];
           const isDone = !!progress;
@@ -662,8 +692,23 @@ class TypePawsApp {
             : '☆☆☆';
 
           if (!isUnlocked) {
+            if (isAuthRequired) {
+              return `
+                <div class="lesson-tile locked auth-required" data-lesson-id="${lesson.id}" data-locked="true" data-auth-required="true" data-lesson-num="${lesson.number}" title="🔐 Sign Up / Log In Required to unlock Lesson #${lesson.number}">
+                  <div class="tile-top-row">
+                    <span class="tile-num-badge">#${lesson.number < 10 ? '0' + lesson.number : lesson.number}</span>
+                    <span class="tile-lock-icon">🔐</span>
+                  </div>
+                  <div class="tile-title">${lesson.title}</div>
+                  <div class="tile-focus-chip">${lesson.focus}</div>
+                  <div class="tile-stars">☆☆☆</div>
+                  <div class="tile-wpm" style="color: var(--color-warning); font-size: 0.65rem; font-weight: 700;">Sign In Req 🔐</div>
+                </div>
+              `;
+            }
+
             return `
-              <div class="lesson-tile locked" data-lesson-id="${lesson.id}" data-locked="true" data-lesson-num="${lesson.number}" title="🔒 Locked: Pass Lesson #${lesson.number - 1} first to unlock">
+              <div class="lesson-tile locked" data-lesson-id="${lesson.id}" data-locked="true" data-auth-required="false" data-lesson-num="${lesson.number}" title="🔒 Locked: Pass Lesson #${lesson.number - 1} first to unlock">
                 <div class="tile-top-row">
                   <span class="tile-num-badge">#${lesson.number < 10 ? '0' + lesson.number : lesson.number}</span>
                   <span class="tile-lock-icon">🔒</span>
@@ -687,7 +732,7 @@ class TypePawsApp {
             : '';
 
           return `
-            <div class="lesson-tile ${isDone ? (isPassed ? 'completed' : 'failed-bench') : ''} ${isNext ? 'current-active' : ''}" data-lesson-id="${lesson.id}" data-locked="false" data-lesson-num="${lesson.number}" title="${lesson.title}: ${lesson.description}">
+            <div class="lesson-tile ${isDone ? (isPassed ? 'completed' : 'failed-bench') : ''} ${isNext ? 'current-active' : ''}" data-lesson-id="${lesson.id}" data-locked="false" data-auth-required="false" data-lesson-num="${lesson.number}" title="${lesson.title}: ${lesson.description}">
               <div class="tile-top-row">
                 <span class="tile-num-badge">#${lesson.number < 10 ? '0' + lesson.number : lesson.number}</span>
                 ${statusIcon}
@@ -704,6 +749,7 @@ class TypePawsApp {
         grid.className = 'lessons-cards-grid';
         grid.innerHTML = filtered.map(lesson => {
           const isUnlocked = window.storageManager.isLessonUnlocked(this.currentLevelKey, lesson.number);
+          const isAuthRequired = window.storageManager.isAuthRequiredForLesson(this.currentLevelKey, lesson.number);
           const benchmark = window.storageManager.getBenchmark(this.currentLevelKey, lesson.number);
           const progress = completedMap[lesson.id];
           const isDone = !!progress;
@@ -714,8 +760,29 @@ class TypePawsApp {
             : '☆☆☆';
 
           if (!isUnlocked) {
+            if (isAuthRequired) {
+              return `
+                <div class="lesson-card locked auth-required" data-lesson-id="${lesson.id}" data-locked="true" data-auth-required="true" data-lesson-num="${lesson.number}">
+                  <div class="lesson-card-top">
+                    <span class="lesson-number">#${lesson.number}</span>
+                    <span class="lesson-diff-tag diff-${lesson.difficulty.toLowerCase()}">${lesson.difficulty}</span>
+                  </div>
+                  <h4 class="lesson-title">🔐 ${lesson.title}</h4>
+                  <div class="lesson-focus">Focus: <code>${lesson.focus}</code></div>
+                  <p class="lesson-snippet">"${lesson.text.substring(0, 48)}..."</p>
+                  <div class="lesson-card-footer">
+                    <div class="lesson-stars">☆☆☆</div>
+                    <div class="lesson-best-wpm" style="color: var(--color-warning); font-weight: 700;">Sign Up / Log In Required</div>
+                    <button class="btn btn-sm btn-primary">
+                      🔐 Sign Up to Unlock
+                    </button>
+                  </div>
+                </div>
+              `;
+            }
+
             return `
-              <div class="lesson-card locked" data-lesson-id="${lesson.id}" data-locked="true" data-lesson-num="${lesson.number}">
+              <div class="lesson-card locked" data-lesson-id="${lesson.id}" data-locked="true" data-auth-required="false" data-lesson-num="${lesson.number}">
                 <div class="lesson-card-top">
                   <span class="lesson-number">#${lesson.number}</span>
                   <span class="lesson-diff-tag diff-${lesson.difficulty.toLowerCase()}">${lesson.difficulty}</span>
@@ -735,7 +802,7 @@ class TypePawsApp {
           }
 
           return `
-            <div class="lesson-card ${isDone ? (isPassed ? 'completed' : 'failed-bench') : ''}" data-lesson-id="${lesson.id}" data-locked="false" data-lesson-num="${lesson.number}">
+            <div class="lesson-card ${isDone ? (isPassed ? 'completed' : 'failed-bench') : ''}" data-lesson-id="${lesson.id}" data-locked="false" data-auth-required="false" data-lesson-num="${lesson.number}">
               <div class="lesson-card-top">
                 <span class="lesson-number">#${lesson.number}</span>
                 <span class="lesson-diff-tag diff-${lesson.difficulty.toLowerCase()}">${lesson.difficulty}</span>
@@ -765,6 +832,15 @@ class TypePawsApp {
             setTimeout(() => el.classList.remove('shake-locked'), 400);
 
             if (window.soundEngine) window.soundEngine.playError();
+            const isAuthReq = el.dataset.authRequired === 'true';
+            if (isAuthReq) {
+              if (window.mascot) {
+                window.mascot.updateBubble(`🔐 Lesson #${lessonNum} requires an account! Sign Up or Log In is compulsory to continue! 🐾`, true);
+              }
+              this.openAuthModal('signup', true, true);
+              return;
+            }
+
             if (window.mascot) {
               const prevNum = lessonNum - 1;
               const prevBench = window.storageManager.getBenchmark(this.currentLevelKey, prevNum);
@@ -786,6 +862,27 @@ class TypePawsApp {
 
   // --- PRACTICE ARENA ENGINE ---
   startLesson(lesson) {
+    if (!lesson) return;
+
+    // 1. Sync active level if lesson belongs to another level
+    const lessonLevel = lesson.level || (lesson.id.startsWith('b_') ? 'beginner' : (lesson.id.startsWith('i_') ? 'intermediate' : 'advanced'));
+    if (this.currentLevelKey !== lessonLevel) {
+      this.currentLevelKey = lessonLevel;
+      window.storageManager.setCurrentLevel(lessonLevel);
+      this.updateHeaderLevelBadge();
+    }
+
+    // 2. Check if locked or requires compulsory authentication
+    const isUnlocked = window.storageManager.isLessonUnlocked(this.currentLevelKey, lesson.number);
+    if (!isUnlocked) {
+      if (window.storageManager.isAuthRequiredForLesson(this.currentLevelKey, lesson.number)) {
+        this.openAuthModal('signup', true, true);
+        return;
+      }
+      this.switchView('lessons');
+      return;
+    }
+
     this.currentLesson = lesson;
     this.lessonText = lesson.text;
     this.currentIndex = 0;
@@ -1159,17 +1256,25 @@ class TypePawsApp {
     // Launch celebratory confetti burst
     this.launchConfetti();
 
-    // Check if user completed 10 lessons as guest -> trigger sign up / login milestone modal!
+    // Check if user completed 10 lessons as guest, or completed lesson 5 in intermediate/advanced as guest
     const isTenthLesson = window.storageManager.shouldPromptAuth();
+    const isLesson5Compulsory = !window.storageManager.data.currentUser && 
+      (this.currentLevelKey === 'intermediate' || this.currentLevelKey === 'advanced') && 
+      this.currentLesson.number === 5;
 
     // Show Results Modal
     setTimeout(() => {
       this.showResultsModal(result, recordResult);
 
-      if (isTenthLesson) {
+      if (isLesson5Compulsory) {
         setTimeout(() => {
           this.closeModal('results-modal');
-          this.openAuthModal('signup', true);
+          this.openAuthModal('signup', true, true);
+        }, 2200);
+      } else if (isTenthLesson) {
+        setTimeout(() => {
+          this.closeModal('results-modal');
+          this.openAuthModal('signup', true, false);
         }, 1800);
       }
     }, 600);
@@ -1309,25 +1414,51 @@ class TypePawsApp {
           }
         } else {
           // Beginner or Lessons 1-5 (No Benchmark Required)
-          benchmarkBanner.className = 'results-benchmark-banner passed';
-          benchmarkBanner.innerHTML = `
-            <span class="bench-icon">✓</span>
-            <div>
-              <b>Lesson Complete & Passed!</b>
-              <div style="font-size: 0.85rem; margin-top: 2px;">Lesson #${lesson.number < 100 ? lesson.number + 1 : 100} is unlocked! 🐾</div>
-            </div>
-          `;
+          const isAuthNext = window.storageManager.isAuthRequiredForLesson(this.currentLevelKey, lesson.number + 1);
 
-          if (nextBtn) {
-            nextBtn.disabled = false;
-            nextBtn.className = 'btn btn-primary';
-            nextBtn.innerHTML = 'Next Lesson ⏩';
-            nextBtn.title = '';
-            nextBtn.onclick = () => {
-              this.closeModal('results-modal');
-              this.startNextLesson();
-            };
+          if (isAuthNext) {
+            benchmarkBanner.className = 'results-benchmark-banner passed';
+            benchmarkBanner.innerHTML = `
+              <span class="bench-icon">🔐</span>
+              <div>
+                <b>Lesson #5 Complete! Sign Up / Log In Required!</b>
+                <div style="font-size: 0.85rem; margin-top: 2px;">To unlock Lesson #6 and test your speed benchmarks, creating an account is compulsory! 🐾</div>
+              </div>
+            `;
+            verdict = "Awesome work finishing Lesson #5! Sign Up or Log In now to unlock Lesson #6 and the benchmark tests! 🐾";
+
+            if (nextBtn) {
+              nextBtn.disabled = false;
+              nextBtn.className = 'btn btn-primary';
+              nextBtn.innerHTML = 'Sign Up to Continue (Compulsory) 🔐';
+              nextBtn.title = 'Sign Up or Log In is compulsory to unlock Lesson #6 onwards';
+              nextBtn.onclick = () => {
+                this.closeModal('results-modal');
+                this.openAuthModal('signup', true, true);
+              };
+            }
+          } else {
+            benchmarkBanner.className = 'results-benchmark-banner passed';
+            benchmarkBanner.innerHTML = `
+              <span class="bench-icon">✓</span>
+              <div>
+                <b>Lesson Complete & Passed!</b>
+                <div style="font-size: 0.85rem; margin-top: 2px;">Lesson #${lesson.number < 100 ? lesson.number + 1 : 100} is unlocked! 🐾</div>
+              </div>
+            `;
+
+            if (nextBtn) {
+              nextBtn.disabled = false;
+              nextBtn.className = 'btn btn-primary';
+              nextBtn.innerHTML = 'Next Lesson ⏩';
+              nextBtn.title = '';
+              nextBtn.onclick = () => {
+                this.closeModal('results-modal');
+                this.startNextLesson();
+              };
+            }
           }
+
           if (retryBtn) {
             retryBtn.className = 'btn btn-outline';
             retryBtn.onclick = () => {
@@ -1345,13 +1476,31 @@ class TypePawsApp {
   }
 
   startNextLesson() {
-    const curNum = this.currentLesson ? this.currentLesson.number : 1;
-    if (curNum < 100) {
-      this.loadLessonByNumber(this.currentLevelKey, curNum + 1);
-    } else {
-      alert("Congratulations! You have completed all 100 lessons in this path! You can practice any lesson or switch to the next level!");
+    const prefix = this.getPrefixForLevel(this.currentLevelKey);
+    const isMatching = this.currentLesson && this.currentLesson.id && this.currentLesson.id.startsWith(prefix);
+    const curNum = isMatching ? this.currentLesson.number : 0;
+    const nextNum = curNum + 1;
+
+    if (nextNum > 100) {
+      alert(`🎉 Congratulations! You have completed all 100 lessons in the ${window.LESSONS_DATA[this.currentLevelKey].name} path! You can practice any lesson or switch to another level.`);
       this.switchView('lessons');
+      return;
     }
+
+    // Check if next lesson requires compulsory sign up / login
+    if (window.storageManager.isAuthRequiredForLesson(this.currentLevelKey, nextNum)) {
+      this.openAuthModal('signup', true, true);
+      return;
+    }
+
+    // Check if next lesson is unlocked
+    if (!window.storageManager.isLessonUnlocked(this.currentLevelKey, nextNum)) {
+      const stats = window.storageManager.getLevelStats(this.currentLevelKey);
+      this.loadLessonByNumber(this.currentLevelKey, stats.nextLessonNum);
+      return;
+    }
+
+    this.loadLessonByNumber(this.currentLevelKey, nextNum);
   }
 
   restartPractice() {
@@ -1427,6 +1576,16 @@ class TypePawsApp {
     if (modal) {
       modal.classList.remove('open');
       document.body.style.overflow = '';
+    }
+
+    if (modalId === 'auth-modal' && this.isAuthCompulsory && !window.storageManager.data.currentUser) {
+      this.isAuthCompulsory = false;
+      if (this.currentView === 'practice' && this.currentLesson && window.storageManager.isAuthRequiredForLesson(this.currentLevelKey, this.currentLesson.number)) {
+        this.switchView('lessons');
+        if (window.mascot) {
+          window.mascot.updateBubble("⚠️ Lessons #6 to #100 in Intermediate & Advanced require an account! Sign up anytime using the button in the header! 🐾", true);
+        }
+      }
     }
   }
 
@@ -1567,10 +1726,39 @@ class TypePawsApp {
     }
   }
 
-  openAuthModal(tab = 'signup', isMilestone = false) {
+  openAuthModal(tab = 'signup', isMilestone = false, isCompulsory = false) {
+    this.isAuthCompulsory = isCompulsory;
     const banner = document.getElementById('auth-milestone-banner');
+    const modalTitle = document.getElementById('auth-modal-title');
     const errAlert = document.getElementById('auth-error-alert');
-    if (banner) banner.style.display = isMilestone ? 'block' : 'none';
+
+    if (banner) {
+      if (isCompulsory) {
+        banner.style.display = 'block';
+        banner.innerHTML = `
+          <div style="font-size: 1.8rem; margin-bottom: 0.2rem;">🔐 ⚡ 🐾</div>
+          <h3 class="auth-milestone-title">Compulsory Sign Up / Log In</h3>
+          <p class="auth-milestone-desc">
+            You've completed Lesson #5 in <b>${window.LESSONS_DATA[this.currentLevelKey].name}</b>! To access Lesson #6 onwards, save your progress, and tackle the benchmark tests, creating an account or logging in is compulsory.
+          </p>
+        `;
+        if (modalTitle) modalTitle.innerText = "🔐 Account Required to Continue";
+      } else if (isMilestone) {
+        banner.style.display = 'block';
+        banner.innerHTML = `
+          <div style="font-size: 1.8rem; margin-bottom: 0.2rem;">🎉 🎓 🐾</div>
+          <h3 class="auth-milestone-title">10 Lessons Finished! Pawsome Milestone!</h3>
+          <p class="auth-milestone-desc">
+            You've completed your first 10 lessons! Sign up or log in to preserve your 10 lessons, save your daily streak, unlock badges, and track your speed!
+          </p>
+        `;
+        if (modalTitle) modalTitle.innerText = "🐾 Join TypePaws";
+      } else {
+        banner.style.display = 'none';
+        if (modalTitle) modalTitle.innerText = "🐾 Join TypePaws";
+      }
+    }
+
     if (errAlert) {
       errAlert.style.display = 'none';
       errAlert.innerText = '';
@@ -1598,9 +1786,15 @@ class TypePawsApp {
 
     try {
       const user = window.storageManager.signUp(usernameInput.value, emailInput.value, passwordInput.value, avatar);
+      this.isAuthCompulsory = false;
       this.closeModal('auth-modal');
       this.updateAuthUI();
       this.renderDashboard();
+      if (this.currentView === 'lessons') {
+        this.renderLessonsView();
+      } else if (this.currentView === 'practice') {
+        if (this.currentLesson) this.startLesson(this.currentLesson);
+      }
       if (usernameInput) usernameInput.value = '';
       if (emailInput) emailInput.value = '';
       if (passwordInput) passwordInput.value = '';
@@ -1622,6 +1816,7 @@ class TypePawsApp {
 
     try {
       const user = window.storageManager.logIn(identifierInput.value, passwordInput.value);
+      this.isAuthCompulsory = false;
       this.closeModal('auth-modal');
       this.updateAuthUI();
       this.updateParagraphLockIndicator();
@@ -1632,6 +1827,8 @@ class TypePawsApp {
         this.renderParagraphsView();
       } else if (this.currentView === 'lessons') {
         this.renderLessonsView();
+      } else if (this.currentView === 'practice') {
+        if (this.currentLesson) this.startLesson(this.currentLesson);
       }
       if (identifierInput) identifierInput.value = '';
       if (passwordInput) passwordInput.value = '';

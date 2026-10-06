@@ -325,12 +325,18 @@ class StorageManager {
    * Check whether a lesson is unlocked for practice:
    * - Lesson 1 of any path is always unlocked.
    * - Lesson N is unlocked only if Lesson N-1 is passed!
+   * - In Intermediate & Advanced paths, Lessons > 5 COMPULSORILY require Sign Up / Log In!
    */
   isLessonUnlocked(levelKey, lessonNumber) {
     const lvl = levelKey || this.data.currentLevel || 'beginner';
     const num = typeof lessonNumber === 'number' ? lessonNumber : parseInt(lessonNumber);
 
     if (num <= 1) return true; // Lesson 1 is always unlocked
+
+    // Compulsory Sign Up / Log In after Lesson 5 in Intermediate or Advanced
+    if ((lvl === 'intermediate' || lvl === 'advanced') && num > 5 && !this.data.currentUser) {
+      return false; // Locked until user creates an account or logs in
+    }
 
     const prefix = lvl === 'beginner' ? 'b_' : (lvl === 'intermediate' ? 'i_' : 'a_');
     const prevId = `${prefix}${num - 1}`;
@@ -348,6 +354,16 @@ class StorageManager {
   }
 
   /**
+   * Check if sign up / log in is required for this lesson:
+   * Compulsory for Intermediate and Advanced lessons > 5 if not logged in.
+   */
+  isAuthRequiredForLesson(levelKey, lessonNumber) {
+    const lvl = levelKey || this.data.currentLevel || 'beginner';
+    const num = typeof lessonNumber === 'number' ? lessonNumber : parseInt(lessonNumber);
+    return (lvl === 'intermediate' || lvl === 'advanced') && num > 5 && !this.data.currentUser;
+  }
+
+  /**
    * Check whether Long Paragraph Arena is unlocked:
    * Must have completed ALL 100 Beginner lessons!
    */
@@ -358,7 +374,7 @@ class StorageManager {
 
   recordLessonResult(lesson, result) {
     const id = lesson.id;
-    const lvl = lesson.level || this.data.currentLevel;
+    const lvl = lesson.level || (lesson.id.startsWith('b_') ? 'beginner' : (lesson.id.startsWith('i_') ? 'intermediate' : (lesson.id.startsWith('a_') ? 'advanced' : this.data.currentLevel)));
     const prev = this.data.completedLessons[id];
     
     // Check if passed according to level & benchmark rules
@@ -659,12 +675,11 @@ class StorageManager {
       }
     }
 
-    // Determine the next lesson to practice: first unlocked lesson that isn't passed yet
+    // Determine the next lesson to practice: first lesson in sequence that is not yet passed
     for (let i = 1; i <= 100; i++) {
-      const isUnlocked = this.isLessonUnlocked(lvlKey, i);
       const item = comp[`${prefix}${i}`];
       const isPassed = item && (item.passed || (lvlKey === 'beginner' && item.completed));
-      if (isUnlocked && !isPassed) {
+      if (!isPassed) {
         nextLessonNum = i;
         break;
       }
