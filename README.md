@@ -70,3 +70,12 @@ Or via Node / NPM:
 ```bash
 npm start
 ```
+
+---
+
+## 📬 Contact, Author & License
+
+- **Author**: Harsh Gautam
+- **Email / Conversation**: [harshgauttam4002@gmail.com](mailto:harshgauttam4002@gmail.com)
+- **License**: Released under the **MIT License**. You have 100% full freedom to publish, host, customize, share, or monetize without any restrictions or royalties.
+

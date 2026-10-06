@@ -7,6 +7,6 @@
     "serve": "npx serve ."
   },
   "keywords": ["typing", "practice", "education", "touch-typing", "cute"],
-  "author": "",
+  "author": "Harsh Gautam <harshgauttam4002@gmail.com>",
   "license": "MIT"
 }

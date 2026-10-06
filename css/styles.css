@@ -2619,6 +2619,36 @@ body.dark-theme .footer-links-list a:hover {
   margin-bottom: 0.85rem;
 }
 
+.footer-email-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  text-decoration: none;
+  word-break: break-all;
+  background: var(--bg-surface-soft);
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-fast);
+}
+
+.footer-email-link:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+body.dark-theme .footer-email-link {
+  color: var(--color-primary);
+  background: var(--bg-surface);
+  border-color: var(--border-light);
+}
+
 .footer-license-chips {
   display: flex;
   gap: 0.4rem;
