@@ -336,6 +336,63 @@ class TypePawsApp {
       });
     }
 
+    // Custom Benchmark Passing Settings
+    const interWpmInput = document.getElementById('setting-bench-inter-wpm');
+    const interAccInput = document.getElementById('setting-bench-inter-acc');
+    const advWpmInput = document.getElementById('setting-bench-adv-wpm');
+    const advAccInput = document.getElementById('setting-bench-adv-acc');
+    const btnResetBenchmarks = document.getElementById('btn-reset-benchmarks');
+
+    this.syncBenchmarkInputs = () => {
+      const b = window.storageManager.getBenchmarkSettings();
+      if (interWpmInput) interWpmInput.value = b.intermediateWpm;
+      if (interAccInput) interAccInput.value = b.intermediateAcc;
+      if (advWpmInput) advWpmInput.value = b.advancedWpm;
+      if (advAccInput) advAccInput.value = b.advancedAcc;
+    };
+
+    this.syncBenchmarkInputs();
+
+    const saveCustomBenchmarks = () => {
+      const interWpm = Math.max(15, Math.min(150, parseInt(interWpmInput ? interWpmInput.value : 35) || 35));
+      const interAcc = Math.max(70, Math.min(100, parseInt(interAccInput ? interAccInput.value : 90) || 90));
+      const advWpm = Math.max(20, Math.min(180, parseInt(advWpmInput ? advWpmInput.value : 55) || 55));
+      const advAcc = Math.max(70, Math.min(100, parseInt(advAccInput ? advAccInput.value : 94) || 94));
+
+      window.storageManager.updateBenchmarks({
+        intermediateWpm: interWpm,
+        intermediateAcc: interAcc,
+        advancedWpm: advWpm,
+        advancedAcc: advAcc
+      });
+
+      if (this.currentView === 'lessons') {
+        this.renderLessonsView();
+      }
+      this.renderDashboard();
+    };
+
+    [interWpmInput, interAccInput, advWpmInput, advAccInput].forEach(inp => {
+      if (inp) {
+        inp.addEventListener('input', () => saveCustomBenchmarks());
+        inp.addEventListener('change', () => saveCustomBenchmarks());
+      }
+    });
+
+    if (btnResetBenchmarks) {
+      btnResetBenchmarks.addEventListener('click', () => {
+        window.storageManager.resetBenchmarksToDefault();
+        this.syncBenchmarkInputs();
+        if (this.currentView === 'lessons') {
+          this.renderLessonsView();
+        }
+        this.renderDashboard();
+        if (window.mascot) {
+          window.mascot.updateBubble("↺ Benchmarks reset to defaults: Intermediate (35 WPM / 90%) & Advanced (55 WPM / 94%)! 🐾", true);
+        }
+      });
+    }
+
     // Testing helper button in Settings: Set Intermediate & Advanced to Lesson 5
     const btnSetLesson5 = document.getElementById('btn-set-lesson5-test');
     if (btnSetLesson5) {
@@ -1566,6 +1623,9 @@ class TypePawsApp {
   openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
+      if (modalId === 'settings-modal' && this.syncBenchmarkInputs) {
+        this.syncBenchmarkInputs();
+      }
       modal.classList.add('open');
       document.body.style.overflow = 'hidden';
     }

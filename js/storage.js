@@ -112,7 +112,13 @@ class StorageManager {
           soundMuted: false,
           keyboardHints: true,
           mascotSkin: 'cat',
-          timerMode: 'passage'
+          timerMode: 'passage',
+          benchmarks: {
+            intermediateWpm: 35,
+            intermediateAcc: 90,
+            advancedWpm: 55,
+            advancedAcc: 94
+          }
         }
       }
     };
@@ -192,7 +198,13 @@ class StorageManager {
         soundMuted: false,
         keyboardHints: true,
         mascotSkin: 'cat',
-        timerMode: 'passage' // 'passage' | '15' | '30' | '60'
+        timerMode: 'passage', // 'passage' | '15' | '30' | '60'
+        benchmarks: {
+          intermediateWpm: 35,
+          intermediateAcc: 90,
+          advancedWpm: 55,
+          advancedAcc: 94
+        }
       }
     };
   }
@@ -255,14 +267,57 @@ class StorageManager {
   }
 
   /**
-   * Benchmark Rules:
-   * - Beginner: NO benchmark required (lessons 1-100: completing passes).
-   * - Intermediate: Lessons 1-5 grace period (no benchmark). Lessons 6-100: Min 35 WPM & 90% Acc.
-   * - Advanced: Lessons 1-5 grace period (no benchmark). Lessons 6-100: Min 55 WPM & 94% Acc.
+   * Benchmark Rules & Custom User Settings:
+   * Defaults:
+   * - Intermediate: 35 WPM & 90% Acc (Lessons 6-100)
+   * - Advanced: 55 WPM & 94% Acc (Lessons 6-100)
+   * Users can freely customize these in Practice Settings!
    */
+  getBenchmarkSettings() {
+    const defaultBench = {
+      intermediateWpm: 35,
+      intermediateAcc: 90,
+      advancedWpm: 55,
+      advancedAcc: 94
+    };
+    if (!this.data.settings || !this.data.settings.benchmarks) {
+      return defaultBench;
+    }
+    return {
+      intermediateWpm: parseInt(this.data.settings.benchmarks.intermediateWpm) || 35,
+      intermediateAcc: parseInt(this.data.settings.benchmarks.intermediateAcc) || 90,
+      advancedWpm: parseInt(this.data.settings.benchmarks.advancedWpm) || 55,
+      advancedAcc: parseInt(this.data.settings.benchmarks.advancedAcc) || 94
+    };
+  }
+
+  updateBenchmarks(newBench) {
+    if (!this.data.settings) this.data.settings = {};
+    const cur = this.getBenchmarkSettings();
+    this.data.settings.benchmarks = {
+      ...cur,
+      ...newBench
+    };
+    this.save();
+    return this.data.settings.benchmarks;
+  }
+
+  resetBenchmarksToDefault() {
+    if (!this.data.settings) this.data.settings = {};
+    this.data.settings.benchmarks = {
+      intermediateWpm: 35,
+      intermediateAcc: 90,
+      advancedWpm: 55,
+      advancedAcc: 94
+    };
+    this.save();
+    return this.data.settings.benchmarks;
+  }
+
   getBenchmark(levelKey, lessonNumber) {
     const lvl = levelKey || this.data.currentLevel || 'beginner';
     const num = typeof lessonNumber === 'number' ? lessonNumber : parseInt(lessonNumber);
+    const custom = this.getBenchmarkSettings();
 
     if (lvl === 'beginner') {
       return {
@@ -284,9 +339,9 @@ class StorageManager {
       }
       return {
         required: true,
-        minWpm: 35,
-        minAccuracy: 90,
-        description: "Benchmark: 35+ WPM & 90%+ Accuracy"
+        minWpm: custom.intermediateWpm,
+        minAccuracy: custom.intermediateAcc,
+        description: `Benchmark: ${custom.intermediateWpm}+ WPM & ${custom.intermediateAcc}%+ Accuracy`
       };
     }
 
@@ -301,9 +356,9 @@ class StorageManager {
       }
       return {
         required: true,
-        minWpm: 55,
-        minAccuracy: 94,
-        description: "Benchmark: 55+ WPM & 94%+ Accuracy"
+        minWpm: custom.advancedWpm,
+        minAccuracy: custom.advancedAcc,
+        description: `Benchmark: ${custom.advancedWpm}+ WPM & ${custom.advancedAcc}%+ Accuracy`
       };
     }
 

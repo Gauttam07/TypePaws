@@ -661,6 +661,78 @@
         </select>
       </div>
 
+      <!-- Custom Speed Benchmarks Section -->
+      <div class="settings-form-group" style="flex-direction: column; align-items: stretch; gap: 0.6rem;">
+        <div class="settings-label-wrap">
+          <span class="settings-title">⚡ Custom Speed Benchmarks (Passing Requirements)</span>
+          <span class="settings-desc">Customize passing speeds & accuracy targets for Intermediate & Advanced lessons</span>
+        </div>
+
+        <div class="settings-benchmarks-box">
+          <!-- Intermediate Benchmark Settings -->
+          <div class="benchmark-config-card">
+            <div class="bench-config-header">
+              <span class="bench-config-icon">⚡</span>
+              <div>
+                <div class="bench-config-title">Intermediate Benchmark (Lessons 6–100)</div>
+                <div class="bench-config-sub">Default: 35 WPM • 90% Accuracy (Lessons 1-5 grace)</div>
+              </div>
+            </div>
+            <div class="bench-inputs-row">
+              <div class="bench-input-field">
+                <label for="setting-bench-inter-wpm">Min Speed (WPM):</label>
+                <div class="bench-input-wrap">
+                  <input type="number" id="setting-bench-inter-wpm" class="form-input-sm" min="15" max="150" value="35">
+                  <span class="bench-unit">WPM</span>
+                </div>
+              </div>
+              <div class="bench-input-field">
+                <label for="setting-bench-inter-acc">Min Accuracy (%):</label>
+                <div class="bench-input-wrap">
+                  <input type="number" id="setting-bench-inter-acc" class="form-input-sm" min="70" max="100" value="90">
+                  <span class="bench-unit">%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Advanced Benchmark Settings -->
+          <div class="benchmark-config-card">
+            <div class="bench-config-header">
+              <span class="bench-config-icon">🔥</span>
+              <div>
+                <div class="bench-config-title">Advanced Benchmark (Lessons 6–100)</div>
+                <div class="bench-config-sub">Default: 55 WPM • 94% Accuracy (Lessons 1-5 grace)</div>
+              </div>
+            </div>
+            <div class="bench-inputs-row">
+              <div class="bench-input-field">
+                <label for="setting-bench-adv-wpm">Min Speed (WPM):</label>
+                <div class="bench-input-wrap">
+                  <input type="number" id="setting-bench-adv-wpm" class="form-input-sm" min="20" max="180" value="55">
+                  <span class="bench-unit">WPM</span>
+                </div>
+              </div>
+              <div class="bench-input-field">
+                <label for="setting-bench-adv-acc">Min Accuracy (%):</label>
+                <div class="bench-input-wrap">
+                  <input type="number" id="setting-bench-adv-acc" class="form-input-sm" min="70" max="100" value="94">
+                  <span class="bench-unit">%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reset Benchmarks to Default button -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.3rem; flex-wrap: wrap; gap: 0.5rem;">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Saves automatically & applies instantly to lessons.</span>
+            <button type="button" class="btn btn-outline btn-sm" id="btn-reset-benchmarks">
+              ↺ Reset to Defaults (35 & 55 WPM)
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="settings-form-group">
         <div class="settings-label-wrap">
           <span class="settings-title">Developer & Testing Helpers</span>
